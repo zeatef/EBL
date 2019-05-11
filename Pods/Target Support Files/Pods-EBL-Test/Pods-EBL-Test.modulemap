@@ -1,0 +1,6 @@
+framework module Pods_EBL_Test {
+  umbrella header "Pods-EBL-Test-umbrella.h"
+
+  export *
+  module * { export * }
+}
