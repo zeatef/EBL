@@ -9,9 +9,10 @@
 import Foundation
 import Firebase
 
-class TeamGameStats {
+class TeamGameStats : NSCopying {
     
     let dbManager = DatabaseManager()
+    let snapshot : DocumentSnapshot
     
     var date : Date
     var home : Bool
@@ -45,8 +46,8 @@ class TeamGameStats {
     var STL : Int
     var FOL : Int
     
-    
-    init(statsDocument : DocumentSnapshot) {
+    required init(statsDocument : DocumentSnapshot) {
+        snapshot = statsDocument
         
         date = (statsDocument.get("date") as! Timestamp).dateValue()
         home = statsDocument.get("home") as! Bool
@@ -88,6 +89,10 @@ class TeamGameStats {
         
         FOL = statsDocument.get("FOL") as! Int
         
+    }
+    
+    func copy(with zone: NSZone? = nil) -> Any {
+        return Swift.type(of:self).init(statsDocument: self.snapshot)
     }
 }
 

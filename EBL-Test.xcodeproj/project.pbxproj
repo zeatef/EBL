@@ -18,6 +18,13 @@
 		5A1B07682215A59E00871710 /* Team.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A1B07672215A59E00871710 /* Team.swift */; };
 		5A1B076A2215A6AC00871710 /* Player.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A1B07692215A6AC00871710 /* Player.swift */; };
 		5A1D8363220BAA1D003EB3C8 /* SplashScreenViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A1D8362220BAA1D003EB3C8 /* SplashScreenViewController.swift */; };
+		5A225CE5228A14EF007A4F25 /* TeamChartManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A225CE4228A14EF007A4F25 /* TeamChartManager.swift */; };
+		5A225CEB228A585D007A4F25 /* LineMarkerView1.xib in Resources */ = {isa = PBXBuildFile; fileRef = 5A225CEA228A585D007A4F25 /* LineMarkerView1.xib */; };
+		5A225CEF228A591A007A4F25 /* LineMarkerView1.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A225CEE228A591A007A4F25 /* LineMarkerView1.swift */; };
+		5A225CF1228E1D1A007A4F25 /* LineMarkerView2.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A225CF0228E1D1A007A4F25 /* LineMarkerView2.swift */; };
+		5A225CF3228E1D43007A4F25 /* LineMarkerView2.xib in Resources */ = {isa = PBXBuildFile; fileRef = 5A225CF2228E1D43007A4F25 /* LineMarkerView2.xib */; };
+		5A225CF5228E26A3007A4F25 /* LineMarkerView3.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A225CF4228E26A3007A4F25 /* LineMarkerView3.swift */; };
+		5A225CF7228E26B0007A4F25 /* LineMarkerView3.xib in Resources */ = {isa = PBXBuildFile; fileRef = 5A225CF6228E26B0007A4F25 /* LineMarkerView3.xib */; };
 		5A3762152267BB9E0013063F /* OpponentPickerCollectionViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A3762132267BB9E0013063F /* OpponentPickerCollectionViewCell.swift */; };
 		5A3762162267BB9E0013063F /* OpponentPickerCollectionViewCell.xib in Resources */ = {isa = PBXBuildFile; fileRef = 5A3762142267BB9E0013063F /* OpponentPickerCollectionViewCell.xib */; };
 		5A3AA01A2220482F00BEABCC /* StatsCollectionViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A3AA0182220482F00BEABCC /* StatsCollectionViewCell.swift */; };
@@ -59,6 +66,13 @@
 		5A1B07672215A59E00871710 /* Team.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Team.swift; sourceTree = "<group>"; };
 		5A1B07692215A6AC00871710 /* Player.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Player.swift; sourceTree = "<group>"; };
 		5A1D8362220BAA1D003EB3C8 /* SplashScreenViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashScreenViewController.swift; sourceTree = "<group>"; };
+		5A225CE4228A14EF007A4F25 /* TeamChartManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeamChartManager.swift; sourceTree = "<group>"; };
+		5A225CEA228A585D007A4F25 /* LineMarkerView1.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = LineMarkerView1.xib; sourceTree = "<group>"; };
+		5A225CEE228A591A007A4F25 /* LineMarkerView1.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LineMarkerView1.swift; sourceTree = "<group>"; };
+		5A225CF0228E1D1A007A4F25 /* LineMarkerView2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LineMarkerView2.swift; sourceTree = "<group>"; };
+		5A225CF2228E1D43007A4F25 /* LineMarkerView2.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = LineMarkerView2.xib; sourceTree = "<group>"; };
+		5A225CF4228E26A3007A4F25 /* LineMarkerView3.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LineMarkerView3.swift; sourceTree = "<group>"; };
+		5A225CF6228E26B0007A4F25 /* LineMarkerView3.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = LineMarkerView3.xib; sourceTree = "<group>"; };
 		5A3762132267BB9E0013063F /* OpponentPickerCollectionViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpponentPickerCollectionViewCell.swift; sourceTree = "<group>"; };
 		5A3762142267BB9E0013063F /* OpponentPickerCollectionViewCell.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = OpponentPickerCollectionViewCell.xib; sourceTree = "<group>"; };
 		5A3AA0182220482F00BEABCC /* StatsCollectionViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsCollectionViewCell.swift; sourceTree = "<group>"; };
@@ -130,6 +144,52 @@
 			path = TeamsViewController;
 			sourceTree = "<group>";
 		};
+		5A225CEC228A58F6007A4F25 /* LineChartMarkers */ = {
+			isa = PBXGroup;
+			children = (
+				5A225CFA228E26C1007A4F25 /* 1 */,
+				5A225CF9228E26BC007A4F25 /* 2 */,
+				5A225CF8228E26B6007A4F25 /* 3 */,
+			);
+			path = LineChartMarkers;
+			sourceTree = "<group>";
+		};
+		5A225CED228A5903007A4F25 /* RadarChartMarkers */ = {
+			isa = PBXGroup;
+			children = (
+				5A784801225623B100EACA9C /* RadarMarkerView.swift */,
+				5ADE76162254CB3900B2C445 /* RadarMarkerView.xib */,
+			);
+			path = RadarChartMarkers;
+			sourceTree = "<group>";
+		};
+		5A225CF8228E26B6007A4F25 /* 3 */ = {
+			isa = PBXGroup;
+			children = (
+				5A225CF4228E26A3007A4F25 /* LineMarkerView3.swift */,
+				5A225CF6228E26B0007A4F25 /* LineMarkerView3.xib */,
+			);
+			path = 3;
+			sourceTree = "<group>";
+		};
+		5A225CF9228E26BC007A4F25 /* 2 */ = {
+			isa = PBXGroup;
+			children = (
+				5A225CF0228E1D1A007A4F25 /* LineMarkerView2.swift */,
+				5A225CF2228E1D43007A4F25 /* LineMarkerView2.xib */,
+			);
+			path = 2;
+			sourceTree = "<group>";
+		};
+		5A225CFA228E26C1007A4F25 /* 1 */ = {
+			isa = PBXGroup;
+			children = (
+				5A225CEE228A591A007A4F25 /* LineMarkerView1.swift */,
+				5A225CEA228A585D007A4F25 /* LineMarkerView1.xib */,
+			);
+			path = 1;
+			sourceTree = "<group>";
+		};
 		5A3762122267BB670013063F /* OpponentPickerCell */ = {
 			isa = PBXGroup;
 			children = (
@@ -181,6 +241,7 @@
 			children = (
 				5ABAEF4F224EE0160022E76A /* extensions.swift */,
 				5ABB6D77226A7B1E00B065BD /* IBDesignables.swift */,
+				5A225CE4228A14EF007A4F25 /* TeamChartManager.swift */,
 			);
 			path = Helpers;
 			sourceTree = "<group>";
@@ -198,8 +259,8 @@
 		5ADE76182254CB4300B2C445 /* ChartMarkerViews */ = {
 			isa = PBXGroup;
 			children = (
-				5A784801225623B100EACA9C /* RadarMarkerView.swift */,
-				5ADE76162254CB3900B2C445 /* RadarMarkerView.xib */,
+				5A225CEC228A58F6007A4F25 /* LineChartMarkers */,
+				5A225CED228A5903007A4F25 /* RadarChartMarkers */,
 			);
 			path = ChartMarkerViews;
 			sourceTree = "<group>";
@@ -371,16 +432,19 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5A225CEB228A585D007A4F25 /* LineMarkerView1.xib in Resources */,
 				5AE09FD32206578300322894 /* LaunchScreen.storyboard in Resources */,
 				5A3762162267BB9E0013063F /* OpponentPickerCollectionViewCell.xib in Resources */,
 				5A3AA0262220488300BEABCC /* StatsCollectionViewCell3.xib in Resources */,
 				5ADE76172254CB3A00B2C445 /* RadarMarkerView.xib in Resources */,
 				5AE09FE122065AC500322894 /* GoogleService-Info.plist in Resources */,
+				5A225CF7228E26B0007A4F25 /* LineMarkerView3.xib in Resources */,
 				5A05B8F12238F8BD0091C87E /* AllTeamsCell.xib in Resources */,
 				5AE09FD02206578300322894 /* Assets.xcassets in Resources */,
 				5AE09FCE2206578300322894 /* Main.storyboard in Resources */,
 				5ACFB3E92242F58600E1CB1F /* StatsCollectionViewCell1.xib in Resources */,
 				5A3AA0202220486300BEABCC /* StatsCollectionViewCell2.xib in Resources */,
+				5A225CF3228E1D43007A4F25 /* LineMarkerView2.xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -502,6 +566,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5A225CF5228E26A3007A4F25 /* LineMarkerView3.swift in Sources */,
 				5A1260872220D06300AC1216 /* PlayersGraphsViewController.swift in Sources */,
 				5A1260832220BD0E00AC1216 /* TeamOverviewViewController.swift in Sources */,
 				5AFF0000223A756700CA089C /* TeamDisplayData.swift in Sources */,
@@ -511,6 +576,7 @@
 				5AC834C72263B91300A35CF2 /* TeamGameStats.swift in Sources */,
 				5ACFB3E82242F58600E1CB1F /* PlayerNameAndImageCell.swift in Sources */,
 				5AB2C4BE221991BD00F32A85 /* PlayerTotalStats.swift in Sources */,
+				5A225CEF228A591A007A4F25 /* LineMarkerView1.swift in Sources */,
 				5AE09FCB2206578300322894 /* SignInViewController.swift in Sources */,
 				5A1260812220B7A600AC1216 /* TeamsViewController.swift in Sources */,
 				5A1260852220D03F00AC1216 /* TeamGraphsViewController.swift in Sources */,
@@ -518,7 +584,9 @@
 				5A1ADF772214276F0058B80A /* PlayersOverviewViewController.swift in Sources */,
 				5AE09FC92206578300322894 /* AppDelegate.swift in Sources */,
 				5A05B8F02238F8BD0091C87E /* AllTeamsCell.swift in Sources */,
+				5A225CE5228A14EF007A4F25 /* TeamChartManager.swift in Sources */,
 				5AB62A5C2212DC4B00EC0C23 /* SideMenuViewController.swift in Sources */,
+				5A225CF1228E1D1A007A4F25 /* LineMarkerView2.swift in Sources */,
 				5ACA49C5223EC62600707806 /* TeamStatsViewController.swift in Sources */,
 				5A1D8363220BAA1D003EB3C8 /* SplashScreenViewController.swift in Sources */,
 				5A784802225623B100EACA9C /* RadarMarkerView.swift in Sources */,

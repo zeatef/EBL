@@ -1095,37 +1095,10 @@
                                             <stackView opaque="NO" contentMode="scaleToFill" alignment="center" spacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="2v6-Ty-ZzL">
                                                 <rect key="frame" x="5" y="0.0" width="335" height="20"/>
                                                 <subviews>
-                                                    <button opaque="NO" tag="1" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="8mL-a4-KuU" customClass="ButtonWithBorder" customModule="EBL_Test" customModuleProvider="target">
-                                                        <rect key="frame" x="0.0" y="0.0" width="50" height="20"/>
+                                                    <button opaque="NO" tag="1" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="TUQ-Jr-F6A" customClass="ButtonWithBorder" customModule="EBL_Test" customModuleProvider="target">
+                                                        <rect key="frame" x="0.0" y="0.0" width="83.666666666666671" height="20"/>
                                                         <constraints>
-                                                            <constraint firstAttribute="height" constant="20" id="35E-n0-vyf"/>
-                                                            <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="50" id="3fS-zf-8FY"/>
-                                                            <constraint firstAttribute="width" secondItem="8mL-a4-KuU" secondAttribute="height" multiplier="5:2" id="eHZ-Hq-Nlf"/>
-                                                        </constraints>
-                                                        <fontDescription key="fontDescription" type="system" pointSize="10"/>
-                                                        <state key="normal" title="Season">
-                                                            <color key="titleColor" red="0.88235294119999996" green="0.88235294119999996" blue="0.88235294119999996" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
-                                                        </state>
-                                                        <userDefinedRuntimeAttributes>
-                                                            <userDefinedRuntimeAttribute type="number" keyPath="borderWidth">
-                                                                <real key="value" value="1"/>
-                                                            </userDefinedRuntimeAttribute>
-                                                            <userDefinedRuntimeAttribute type="number" keyPath="cornerRadius">
-                                                                <real key="value" value="3"/>
-                                                            </userDefinedRuntimeAttribute>
-                                                            <userDefinedRuntimeAttribute type="color" keyPath="borderColor">
-                                                                <color key="value" red="0.88235294119999996" green="0.88235294119999996" blue="0.88235294119999996" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
-                                                            </userDefinedRuntimeAttribute>
-                                                        </userDefinedRuntimeAttributes>
-                                                        <connections>
-                                                            <action selector="periodButtonPressed:" destination="NRe-ZJ-Qx4" eventType="touchUpInside" id="Oqo-lz-NjR"/>
-                                                        </connections>
-                                                    </button>
-                                                    <button opaque="NO" tag="2" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="TUQ-Jr-F6A" customClass="ButtonWithBorder" customModule="EBL_Test" customModuleProvider="target">
-                                                        <rect key="frame" x="58" y="0.0" width="87" height="20"/>
-                                                        <constraints>
-                                                            <constraint firstAttribute="width" secondItem="TUQ-Jr-F6A" secondAttribute="height" multiplier="87:20" id="YZl-ry-SvP"/>
-                                                            <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="77" id="a6B-0W-HV0"/>
+                                                            <constraint firstAttribute="height" constant="20" id="RJW-7W-SAw"/>
                                                         </constraints>
                                                         <fontDescription key="fontDescription" type="system" pointSize="10"/>
                                                         <state key="normal" title="Last 5 Games">
@@ -1146,8 +1119,11 @@
                                                             <action selector="periodButtonPressed:" destination="NRe-ZJ-Qx4" eventType="touchUpInside" id="Wpt-Kp-w9D"/>
                                                         </connections>
                                                     </button>
-                                                    <button opaque="NO" tag="3" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="H2v-0P-9W1" customClass="ButtonWithBorder" customModule="EBL_Test" customModuleProvider="target">
-                                                        <rect key="frame" x="153" y="0.0" width="87" height="20"/>
+                                                    <button opaque="NO" tag="2" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="H2v-0P-9W1" customClass="ButtonWithBorder" customModule="EBL_Test" customModuleProvider="target">
+                                                        <rect key="frame" x="91.666666666666657" y="0.0" width="83.666666666666657" height="20"/>
+                                                        <constraints>
+                                                            <constraint firstAttribute="height" constant="20" id="axX-GA-MVo"/>
+                                                        </constraints>
                                                         <fontDescription key="fontDescription" type="system" pointSize="10"/>
                                                         <state key="normal" title="Last 10 Games">
                                                             <color key="titleColor" red="0.88235294119999996" green="0.88235294119999996" blue="0.88235294119999996" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
@@ -1167,8 +1143,11 @@
                                                             <action selector="periodButtonPressed:" destination="NRe-ZJ-Qx4" eventType="touchUpInside" id="oS8-qf-1A9"/>
                                                         </connections>
                                                     </button>
-                                                    <button opaque="NO" tag="4" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="sP9-LR-yt3" customClass="ButtonWithBorder" customModule="EBL_Test" customModuleProvider="target">
-                                                        <rect key="frame" x="248" y="0.0" width="87" height="20"/>
+                                                    <button opaque="NO" tag="3" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="sP9-LR-yt3" customClass="ButtonWithBorder" customModule="EBL_Test" customModuleProvider="target">
+                                                        <rect key="frame" x="183.33333333333334" y="0.0" width="83.666666666666657" height="20"/>
+                                                        <constraints>
+                                                            <constraint firstAttribute="height" constant="20" id="yak-pC-hes"/>
+                                                        </constraints>
                                                         <fontDescription key="fontDescription" type="system" pointSize="10"/>
                                                         <state key="normal" title="Last 20 Games">
                                                             <color key="titleColor" red="0.88235294119999996" green="0.88235294119999996" blue="0.88235294119999996" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
@@ -1188,13 +1167,35 @@
                                                             <action selector="periodButtonPressed:" destination="NRe-ZJ-Qx4" eventType="touchUpInside" id="O3g-fR-gD6"/>
                                                         </connections>
                                                     </button>
+                                                    <button opaque="NO" tag="4" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="8mL-a4-KuU" customClass="ButtonWithBorder" customModule="EBL_Test" customModuleProvider="target">
+                                                        <rect key="frame" x="275" y="0.0" width="60" height="20"/>
+                                                        <constraints>
+                                                            <constraint firstAttribute="height" constant="20" id="5yC-MR-4vL"/>
+                                                        </constraints>
+                                                        <fontDescription key="fontDescription" type="system" pointSize="10"/>
+                                                        <state key="normal" title="All Season">
+                                                            <color key="titleColor" red="0.88235294119999996" green="0.88235294119999996" blue="0.88235294119999996" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
+                                                        </state>
+                                                        <userDefinedRuntimeAttributes>
+                                                            <userDefinedRuntimeAttribute type="number" keyPath="borderWidth">
+                                                                <real key="value" value="1"/>
+                                                            </userDefinedRuntimeAttribute>
+                                                            <userDefinedRuntimeAttribute type="number" keyPath="cornerRadius">
+                                                                <real key="value" value="3"/>
+                                                            </userDefinedRuntimeAttribute>
+                                                            <userDefinedRuntimeAttribute type="color" keyPath="borderColor">
+                                                                <color key="value" red="0.88235294119999996" green="0.88235294119999996" blue="0.88235294119999996" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
+                                                            </userDefinedRuntimeAttribute>
+                                                        </userDefinedRuntimeAttributes>
+                                                        <connections>
+                                                            <action selector="periodButtonPressed:" destination="NRe-ZJ-Qx4" eventType="touchUpInside" id="Oqo-lz-NjR"/>
+                                                        </connections>
+                                                    </button>
                                                 </subviews>
                                                 <constraints>
-                                                    <constraint firstItem="sP9-LR-yt3" firstAttribute="height" secondItem="8mL-a4-KuU" secondAttribute="height" id="2JW-UD-p7g"/>
-                                                    <constraint firstItem="H2v-0P-9W1" firstAttribute="height" secondItem="8mL-a4-KuU" secondAttribute="height" id="3AQ-fz-Yxh"/>
-                                                    <constraint firstItem="H2v-0P-9W1" firstAttribute="width" secondItem="TUQ-Jr-F6A" secondAttribute="width" id="Ue9-wl-H0I"/>
-                                                    <constraint firstItem="sP9-LR-yt3" firstAttribute="width" secondItem="TUQ-Jr-F6A" secondAttribute="width" id="dXm-g9-oZh"/>
-                                                    <constraint firstItem="TUQ-Jr-F6A" firstAttribute="height" secondItem="8mL-a4-KuU" secondAttribute="height" id="ho0-dR-6KI"/>
+                                                    <constraint firstItem="H2v-0P-9W1" firstAttribute="width" secondItem="TUQ-Jr-F6A" secondAttribute="width" id="KTf-pe-Hvf"/>
+                                                    <constraint firstItem="sP9-LR-yt3" firstAttribute="width" secondItem="TUQ-Jr-F6A" secondAttribute="width" id="a3T-ag-Icy"/>
+                                                    <constraint firstItem="8mL-a4-KuU" firstAttribute="width" secondItem="sP9-LR-yt3" secondAttribute="height" multiplier="60:20" id="sE5-jj-vgm"/>
                                                 </constraints>
                                             </stackView>
                                         </subviews>
@@ -1244,7 +1245,7 @@
                                     <constraint firstItem="nUy-iw-b5m" firstAttribute="top" secondItem="bFe-gU-wNC" secondAttribute="bottom" constant="10" id="pMm-Qh-tLV"/>
                                 </constraints>
                             </view>
-                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="196-hs-YOG" customClass="LineChartView" customModule="Charts">
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="196-hs-YOG" customClass="CombinedChartView" customModule="Charts">
                                 <rect key="frame" x="0.0" y="389.66666666666674" width="375" height="378.33333333333326"/>
                                 <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                             </view>

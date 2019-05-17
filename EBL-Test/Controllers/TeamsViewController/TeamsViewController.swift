@@ -193,7 +193,7 @@ class TeamsViewController : UIViewController {
         case 4:
             removeCurrentSubview()
             currentSubview = tag
-            playersGraphsVC.view.isHidden = false;
+            playersGraphsVC.view.isHidden = false
         default:
             print("")
         }
