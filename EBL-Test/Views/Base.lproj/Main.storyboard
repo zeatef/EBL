@@ -1273,7 +1273,7 @@
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="abE-Ns-YH8" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="-20122.400000000001" y="-6692.3645320197047"/>
+            <point key="canvasLocation" x="-21348" y="-6032"/>
         </scene>
         <!--Players Graphs View Controller-->
         <scene sceneID="0y3-W2-IMI">
@@ -1299,14 +1299,14 @@
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="Dl9-2c-dLW" customClass="Segmentio" customModule="Segmentio">
-                                <rect key="frame" x="0.0" y="88" width="375" height="35"/>
+                                <rect key="frame" x="0.0" y="88" width="375" height="42.666666666666657"/>
                                 <color key="backgroundColor" red="0.098040185868740082" green="0.098037473857402802" blue="0.098039321601390839" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
                                 <constraints>
-                                    <constraint firstAttribute="height" constant="35" id="qNq-Q1-a5D"/>
+                                    <constraint firstAttribute="height" constant="42.5" id="qNq-Q1-a5D"/>
                                 </constraints>
                             </view>
                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="rGT-cg-hdQ" userLabel="PageContent">
-                                <rect key="frame" x="0.0" y="123" width="375" height="689"/>
+                                <rect key="frame" x="0.0" y="130.66666666666669" width="375" height="681.33333333333326"/>
                                 <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                             </view>
                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="K32-ji-EY6" customClass="NVActivityIndicatorView" customModule="NVActivityIndicatorView">

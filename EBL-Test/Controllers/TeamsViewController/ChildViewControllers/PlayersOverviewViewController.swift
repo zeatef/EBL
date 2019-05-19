@@ -107,7 +107,7 @@ extension PlayersOverviewViewController: UICollectionViewDataSource {
                 cell.isSkeletonable = true
 
                 if (dataArray.count > 0) {
-                    cell.playerImage.image = UIImage(named: "lebronJames")
+                    cell.playerImage.image = UIImage(named: "player")
                     cell.firstName.text = dataArray[indexPath.section - 1][indexPath.row]
                     cell.lastName.text = dataArray[indexPath.section - 1][indexPath.row + 1]
                 } else {

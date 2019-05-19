@@ -353,7 +353,7 @@ extension TeamOverviewViewController : UICollectionViewDataSource {
                     return UICollectionViewCell()
                 }
                 
-                cell.playerImage.image = UIImage(named: "lebronJames")
+                cell.playerImage.image = UIImage(named: "player")
                 if(playerDataArray.count > 0) {
                     cell.firstName.text = playerDataArray[indexPath.section][indexPath.row]
                     cell.lastName.text = playerDataArray[indexPath.section][indexPath.row + 1]

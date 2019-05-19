@@ -16,7 +16,7 @@ class TeamsViewController : UIViewController {
     
     @IBOutlet weak var loadingView: NVActivityIndicatorView!
     @IBOutlet weak var tabbedMenuBar : Segmentio!
-    let tabbedMenuBarContent : [SegmentioItem] = [SegmentioItem(title: "Team Overview", image: nil), SegmentioItem(title: "Team Stats", image: nil), SegmentioItem(title: "Players Stats", image: nil), SegmentioItem(title: "Team Graphs", image: nil), SegmentioItem(title: "Players Graphs", image: nil)]
+    let tabbedMenuBarContent : [SegmentioItem] = [SegmentioItem(title: "Overview", image: nil), SegmentioItem(title: "Game Statistics", image: nil), SegmentioItem(title: "Players", image: nil)]
     
     @IBOutlet weak var pageContent: UIView!
 
@@ -66,27 +66,27 @@ class TeamsViewController : UIViewController {
         return viewController
     }()
     
-    //Initialize Fourth View (Team Graphs)
-    lazy var teamGraphsVC : TeamGraphsViewController = {
-        let storyboard = UIStoryboard(name: "Main", bundle: Bundle.main)
-        
-        var viewController = storyboard.instantiateViewController(withIdentifier: "TeamGraphsViewController") as! TeamGraphsViewController
-        
-        self.addViewControllerAsChildViewController(childViewController: viewController)
-        
-        return viewController
-    }()
-    
-    //Initialize Fifth View (Players Graphs)
-    lazy var playersGraphsVC : PlayersGraphsViewController = {
-        let storyboard = UIStoryboard(name: "Main", bundle: Bundle.main)
-        
-        var viewController = storyboard.instantiateViewController(withIdentifier: "PlayersGraphsViewController") as! PlayersGraphsViewController
-        
-        self.addViewControllerAsChildViewController(childViewController: viewController)
-        
-        return viewController
-    }()
+//    //Initialize Fourth View (Team Graphs)
+//    lazy var teamGraphsVC : TeamGraphsViewController = {
+//        let storyboard = UIStoryboard(name: "Main", bundle: Bundle.main)
+//
+//        var viewController = storyboard.instantiateViewController(withIdentifier: "TeamGraphsViewController") as! TeamGraphsViewController
+//
+//        self.addViewControllerAsChildViewController(childViewController: viewController)
+//
+//        return viewController
+//    }()
+//
+//    //Initialize Fifth View (Players Graphs)
+//    lazy var playersGraphsVC : PlayersGraphsViewController = {
+//        let storyboard = UIStoryboard(name: "Main", bundle: Bundle.main)
+//
+//        var viewController = storyboard.instantiateViewController(withIdentifier: "PlayersGraphsViewController") as! PlayersGraphsViewController
+//
+//        self.addViewControllerAsChildViewController(childViewController: viewController)
+//
+//        return viewController
+//    }()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -132,35 +132,36 @@ class TeamsViewController : UIViewController {
     func setupTabbedMenuBar(indicatorColor: UIColor = UIColor.flatOrange()){
         tabbedMenuBar.setup(content: tabbedMenuBarContent, style: .onlyLabel, options: SegmentioOptions(
             backgroundColor: tabbedMenuBar.backgroundColor!,
-            segmentPosition: SegmentioPosition.dynamic,
+            segmentPosition: SegmentioPosition.fixed(maxVisibleItems: 3),
             scrollEnabled: true,
             indicatorOptions: SegmentioIndicatorOptions(
                 type: .bottom,
-                ratio: 1,
-                height: 2,
+                ratio: 0.9,
+                height: 3,
                 color: indicatorColor
             ),
             horizontalSeparatorOptions: SegmentioHorizontalSeparatorOptions(
                 type: SegmentioHorizontalSeparatorType.none
             ),
             verticalSeparatorOptions: SegmentioVerticalSeparatorOptions(
-                ratio: 0
+                ratio: 0.4,
+                color: UIColor(hexString: "E1E1E1", withAlpha: 0.5)
             ),
             labelTextAlignment: .center,
             segmentStates: SegmentioStates(
                 defaultState: SegmentioState(
                     backgroundColor: .clear,
-                    titleFont: UIFont.systemFont(ofSize: 11.0),
+                    titleFont: UIFont.systemFont(ofSize: 11.0, weight: .semibold),
                     titleTextColor: UIColor.white
                 ),
                 selectedState: SegmentioState(
                     backgroundColor: .clear,
-                    titleFont: UIFont.systemFont(ofSize: 11.0),
+                    titleFont: UIFont.systemFont(ofSize: 11.0, weight: .semibold),
                     titleTextColor: UIColor.white
                 ),
                 highlightedState: SegmentioState(
                     backgroundColor: UIColor.lightGray.withAlphaComponent(0.6),
-                    titleFont: UIFont.boldSystemFont(ofSize: 11.0),
+                    titleFont: UIFont.systemFont(ofSize: 11.0, weight: .semibold),
                     titleTextColor: .black
                 )
             )
@@ -186,14 +187,14 @@ class TeamsViewController : UIViewController {
             removeCurrentSubview()
             currentSubview = tag
             playersOverviewVC.view.isHidden = false
-        case 3:
-            removeCurrentSubview()
-            currentSubview = tag
-            teamGraphsVC.view.isHidden = false
-        case 4:
-            removeCurrentSubview()
-            currentSubview = tag
-            playersGraphsVC.view.isHidden = false
+//        case 3:
+//            removeCurrentSubview()
+//            currentSubview = tag
+//            teamGraphsVC.view.isHidden = false
+//        case 4:
+//            removeCurrentSubview()
+//            currentSubview = tag
+//            playersGraphsVC.view.isHidden = false
         default:
             print("")
         }
@@ -207,10 +208,10 @@ class TeamsViewController : UIViewController {
             teamStatsVC.view.isHidden = true
         case 2:
             playersOverviewVC.view.isHidden = true
-        case 3:
-            teamGraphsVC.view.isHidden = true
-        case 4:
-            playersGraphsVC.view.isHidden = true
+//        case 3:
+//            teamGraphsVC.view.isHidden = true
+//        case 4:
+//            playersGraphsVC.view.isHidden = true
         default:
             print("")
         }
