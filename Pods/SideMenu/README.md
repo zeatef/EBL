@@ -13,7 +13,7 @@
 > Hi, I'm Jon Kent and I am an iOS designer, developer, and mobile strategist. I love coffee and play the drums.
 > * [**Hire me**](mailto:yo@massappeal.co?subject=Let's%20build%20something%20amazing) to help you make cool stuff. *Note: If you're having a problem with SideMenu, please open an [issue](https://github.com/jonkykong/SideMenu/issues/new) and do not email me.*
 > * Check out my [website](http://massappeal.co) to see some of my other projects.
-> * Building and maintaining this **free** library takes a lot of my time and **saves you time**. Please consider paying it forward by supporting me with a small amount to my [PayPal](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=contact%40jonkent%2eme&lc=US&currency_code=USD&bn=PP%2dDonationsBF%3abtn_donateCC_LG%2egif%3aNonHosted). (only **4** people have donated since inception 😕 but **thank you** to those who have!)
+> * Building and maintaining this **free** library takes a lot of my time and **saves you time**. Please consider paying it forward by supporting me with a small amount to my [PayPal](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=contact%40jonkent%2eme&lc=US&currency_code=USD&bn=PP%2dDonationsBF%3abtn_donateCC_LG%2egif%3aNonHosted). (only **4** people have donated since 12/23/15 😕 but **thank you** to those who have!)
 
 * **[Overview](#overview)**
   * [Preview Samples](#preview-samples) 
@@ -69,7 +69,7 @@ To integrate SideMenu into your Xcode project using CocoaPods, specify it in you
 
 ```ruby
 source 'https://github.com/CocoaPods/Specs.git'
-platform :ios, '8.0'
+platform :ios, '10.0'
 use_frameworks!
 
 pod 'SideMenu'
@@ -137,16 +137,20 @@ let menuRightNavigationController = UISideMenuNavigationController(rootViewContr
 // let menuRightNavigationController = storyboard!.instantiateViewController(withIdentifier: "RightMenuNavigationController") as! UISideMenuNavigationController
 SideMenuManager.default.menuRightNavigationController = menuRightNavigationController
 
-// Enable gestures. The left and/or right menus must be set up above for these to work.
+// (Optional) Enable gestures. The left and/or right menus must be set up above for these to work.
 // Note that these continue to work on the Navigation Controller independent of the view controller it displays!
 SideMenuManager.default.menuAddPanGestureToPresent(toView: self.navigationController!.navigationBar)
 SideMenuManager.default.menuAddScreenEdgePanGesturesToPresent(toView: self.navigationController!.view)
+
+// (Optional) Prevent status bar area from turning black when menu appears:
+SideMenuManager.default.menuFadeStatusBar = false
 ```
 Then from a button, do something like this:
 ``` swift
 present(SideMenuManager.default.menuLeftNavigationController!, animated: true, completion: nil)
-
-// Similarly, to dismiss a menu programmatically, you would do this:
+```
+To dismiss a menu programmatically, do something like this:
+``` swift
 dismiss(animated: true, completion: nil)
 ```
 That's it.
