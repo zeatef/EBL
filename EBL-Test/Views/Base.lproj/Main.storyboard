@@ -185,7 +185,6 @@
         <!--Games Schedule-->
         <scene sceneID="XEX-01-fDH">
             <objects>
-                <placeholder placeholderIdentifier="IBFirstResponder" id="i77-XT-yUK" userLabel="First Responder" sceneMemberID="firstResponder"/>
                 <viewController id="s1b-5I-wug" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="mb8-W8-XCi">
                         <rect key="frame" x="0.0" y="0.0" width="375" height="812"/>
@@ -199,6 +198,7 @@
                         </barButtonItem>
                     </navigationItem>
                 </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="i77-XT-yUK" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
             <point key="canvasLocation" x="-23386" y="-7437"/>
         </scene>
@@ -334,7 +334,7 @@
                                                     <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" alignment="top" spacing="5" translatesAutoresizingMaskIntoConstraints="NO" id="pfr-mQ-1Ys">
                                                         <rect key="frame" x="122.66666666666667" y="27.666666666666664" width="252.33333333333331" height="77.666666666666686"/>
                                                         <subviews>
-                                                            <stackView opaque="NO" contentMode="scaleToFill" spacing="3" translatesAutoresizingMaskIntoConstraints="NO" id="qg5-mA-dsx">
+                                                            <stackView opaque="NO" contentMode="scaleToFill" distribution="fillProportionally" spacing="3" translatesAutoresizingMaskIntoConstraints="NO" id="qg5-mA-dsx">
                                                                 <rect key="frame" x="0.0" y="0.0" width="125" height="15.666666666666666"/>
                                                                 <subviews>
                                                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="League Ranking:" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="fNC-wa-4Mo">
@@ -1374,7 +1374,6 @@
         <!--Players-->
         <scene sceneID="SwP-9H-N3r">
             <objects>
-                <placeholder placeholderIdentifier="IBFirstResponder" id="Rwc-9E-nVr" userLabel="First Responder" sceneMemberID="firstResponder"/>
                 <viewController id="ZkS-vn-FoK" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="LJT-kQ-3DX">
                         <rect key="frame" x="0.0" y="0.0" width="375" height="812"/>
@@ -1388,6 +1387,7 @@
                         </barButtonItem>
                     </navigationItem>
                 </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="Rwc-9E-nVr" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
             <point key="canvasLocation" x="-23386" y="-5999"/>
         </scene>
@@ -1437,7 +1437,6 @@
         <!--Games-->
         <scene sceneID="y0h-08-63G">
             <objects>
-                <placeholder placeholderIdentifier="IBFirstResponder" id="iAD-II-cFt" userLabel="First Responder" sceneMemberID="firstResponder"/>
                 <navigationController automaticallyAdjustsScrollViewInsets="NO" id="i3Q-Aj-kxn" sceneMemberID="viewController">
                     <tabBarItem key="tabBarItem" title="Games" image="tabBarItem:fB9-XE-pis:image" id="fB9-XE-pis">
                         <color key="badgeColor" red="1" green="0.57810515169999999" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
@@ -1460,13 +1459,13 @@
                         <segue destination="s1b-5I-wug" kind="relationship" relationship="rootViewController" id="r5L-0p-PNu"/>
                     </connections>
                 </navigationController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="iAD-II-cFt" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
             <point key="canvasLocation" x="-24170" y="-7437"/>
         </scene>
         <!--Players-->
         <scene sceneID="ev3-YG-cfv">
             <objects>
-                <placeholder placeholderIdentifier="IBFirstResponder" id="gPA-lP-Ugy" userLabel="First Responder" sceneMemberID="firstResponder"/>
                 <navigationController automaticallyAdjustsScrollViewInsets="NO" id="eH8-9v-2xM" sceneMemberID="viewController">
                     <tabBarItem key="tabBarItem" title="Players" image="tabBarItem:pTp-qi-pnT:image" id="pTp-qi-pnT"/>
                     <toolbarItems/>
@@ -1484,6 +1483,7 @@
                         <segue destination="ZkS-vn-FoK" kind="relationship" relationship="rootViewController" id="JSE-ZB-TOc"/>
                     </connections>
                 </navigationController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="gPA-lP-Ugy" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
             <point key="canvasLocation" x="-24170" y="-5998"/>
         </scene>
@@ -1533,7 +1533,6 @@
         <!--League Leaders-->
         <scene sceneID="lTJ-C6-tkH">
             <objects>
-                <placeholder placeholderIdentifier="IBFirstResponder" id="xGX-rL-2B3" userLabel="First Responder" sceneMemberID="firstResponder"/>
                 <viewController id="wmb-Y8-isD" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="Fsw-XA-zyf">
                         <rect key="frame" x="0.0" y="0.0" width="375" height="812"/>
@@ -1547,13 +1546,13 @@
                         </barButtonItem>
                     </navigationItem>
                 </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="xGX-rL-2B3" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
             <point key="canvasLocation" x="-23386" y="-4614"/>
         </scene>
         <!--Stats-->
         <scene sceneID="y1e-xB-POM">
             <objects>
-                <placeholder placeholderIdentifier="IBFirstResponder" id="C6o-04-ezM" userLabel="First Responder" sceneMemberID="firstResponder"/>
                 <navigationController automaticallyAdjustsScrollViewInsets="NO" id="bvA-pm-rBd" sceneMemberID="viewController">
                     <tabBarItem key="tabBarItem" title="Stats" image="stats-icon" id="C85-yU-Vaa"/>
                     <toolbarItems/>
@@ -1571,6 +1570,7 @@
                         <segue destination="wmb-Y8-isD" kind="relationship" relationship="rootViewController" id="peW-6d-mFX"/>
                     </connections>
                 </navigationController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="C6o-04-ezM" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
             <point key="canvasLocation" x="-24170" y="-4615"/>
         </scene>
