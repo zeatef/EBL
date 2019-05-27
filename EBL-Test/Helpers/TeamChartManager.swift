@@ -211,11 +211,11 @@ class TeamChartManager {
                 opponentEntries.append(ChartDataEntry(x: Double(i), y: Double(games[i].opponentPTS), data: opponentData as AnyObject))
             }
             
-            let teamDataset = LineChartDataSet(values: teamEntries, label: "PTS Scored")
+            let teamDataset = LineChartDataSet(entries: teamEntries, label: "PTS Scored")
             lineDatasetOptions(dataset: teamDataset, colorsHEX: [team!.primaryColor, team!.secondaryColor], teamColor: true)
             teamDataset.mode = .horizontalBezier
             
-            let opponentDataset = LineChartDataSet(values: opponentEntries, label: "PTS Allowed")
+            let opponentDataset = LineChartDataSet(entries: opponentEntries, label: "PTS Allowed")
             lineDatasetOptions(dataset: opponentDataset, colorsHEX: [team!.primaryColor, team!.secondaryColor], teamColor: false)
             opponentDataset.lineDashLengths = [2, 6]
             opponentDataset.formLineDashLengths = [2, 3]
@@ -248,7 +248,7 @@ class TeamChartManager {
                 entries.append(ChartDataEntry(x: Double(i), y: Double(games[i].avgFGP*100), data: data as AnyObject))
             }
             
-            let dataset = LineChartDataSet(values: entries, label: "Field Goals %")
+            let dataset = LineChartDataSet(entries: entries, label: "Field Goals %")
             lineDatasetOptions(dataset: dataset, colorsHEX: [team!.primaryColor, team!.secondaryColor], teamColor: true)
 
             let lineData = LineChartData(dataSet: dataset)
@@ -279,7 +279,7 @@ class TeamChartManager {
                 entries.append(ChartDataEntry(x: Double(i), y: Double(games[i].avg3FGP*100), data: data as AnyObject))
             }
             
-            let dataset = LineChartDataSet(values: entries, label: "3PTS Field Goals %")
+            let dataset = LineChartDataSet(entries: entries, label: "3PTS Field Goals %")
             lineDatasetOptions(dataset: dataset, colorsHEX: [team!.primaryColor, team!.secondaryColor], teamColor: true)
             
             let lineData = LineChartData(dataSet: dataset)
@@ -310,7 +310,7 @@ class TeamChartManager {
                 entries.append(ChartDataEntry(x: Double(i), y: Double(games[i].avg2FGP*100), data: data as AnyObject))
             }
             
-            let dataset = LineChartDataSet(values: entries, label: "2PTS Field Goals %")
+            let dataset = LineChartDataSet(entries: entries, label: "2PTS Field Goals %")
             lineDatasetOptions(dataset: dataset, colorsHEX: [team!.primaryColor, team!.secondaryColor], teamColor: true)
             
             let lineData = LineChartData(dataSet: dataset)
@@ -341,7 +341,7 @@ class TeamChartManager {
                 entries.append(ChartDataEntry(x: Double(i), y: Double(games[i].avgFTP*100), data: data as AnyObject))
             }
             
-            let dataset = LineChartDataSet(values: entries, label: "Free Throws %")
+            let dataset = LineChartDataSet(entries: entries, label: "Free Throws %")
             lineDatasetOptions(dataset: dataset, colorsHEX: [team!.primaryColor, team!.secondaryColor], teamColor: true)
             
             let lineData = LineChartData(dataSet: dataset)
@@ -372,7 +372,7 @@ class TeamChartManager {
                 entries.append(ChartDataEntry(x: Double(i), y: Double(games[i].AST), data: data as AnyObject))
             }
             
-            let dataset = LineChartDataSet(values: entries, label: "Assists")
+            let dataset = LineChartDataSet(entries: entries, label: "Assists")
             lineDatasetOptions(dataset: dataset, colorsHEX: [team!.primaryColor, team!.secondaryColor], teamColor: true)
             
             let lineData = LineChartData(dataSet: dataset)
@@ -415,13 +415,13 @@ class TeamChartManager {
                 drbEntries.append(ChartDataEntry(x: Double(i), y: Double(games[i].DRB), data: teamData as AnyObject))
             }
             
-            let rebDataset = LineChartDataSet(values: rebEntries, label: "Total REB")
+            let rebDataset = LineChartDataSet(entries: rebEntries, label: "Total REB")
             lineDatasetOptions(dataset: rebDataset, colorsHEX: [team!.primaryColor, team!.secondaryColor], teamColor: true)
             
-            let drbDataset = LineChartDataSet(values: drbEntries, label: "Defensive REB")
+            let drbDataset = LineChartDataSet(entries: drbEntries, label: "Defensive REB")
             lineDatasetOptions(dataset: drbDataset, colorsHEX: [team!.primaryColor, team!.secondaryColor], teamColor: false)
             
-            let orbDataset = LineChartDataSet(values: orbEntries, label: "Offensive REB")
+            let orbDataset = LineChartDataSet(entries: orbEntries, label: "Offensive REB")
             lineDatasetOptions(dataset: orbDataset, colorsHEX: [team!.primaryColor, team!.secondaryColor], teamColor: false)
             orbDataset.lineDashLengths = [2, 6]
             orbDataset.formLineDashLengths = [2, 3]
@@ -454,7 +454,7 @@ class TeamChartManager {
                 entries.append(ChartDataEntry(x: Double(i), y: Double(games[i].STL), data: data as AnyObject))
             }
             
-            let dataset = LineChartDataSet(values: entries, label: "Steals")
+            let dataset = LineChartDataSet(entries: entries, label: "Steals")
             lineDatasetOptions(dataset: dataset, colorsHEX: [team!.primaryColor, team!.secondaryColor], teamColor: true)
             
             let lineData = LineChartData(dataSet: dataset)
@@ -485,7 +485,7 @@ class TeamChartManager {
                 entries.append(ChartDataEntry(x: Double(i), y: Double(games[i].TO), data: data as AnyObject))
             }
             
-            let dataset = LineChartDataSet(values: entries, label: "Turnovers")
+            let dataset = LineChartDataSet(entries: entries, label: "Turnovers")
             lineDatasetOptions(dataset: dataset, colorsHEX: [team!.primaryColor, team!.secondaryColor], teamColor: true)
             
             let lineData = LineChartData(dataSet: dataset)
@@ -516,7 +516,7 @@ class TeamChartManager {
                 entries.append(ChartDataEntry(x: Double(i), y: Double(games[i].BLK), data: data as AnyObject))
             }
             
-            let dataset = LineChartDataSet(values: entries, label: "Blocks")
+            let dataset = LineChartDataSet(entries: entries, label: "Blocks")
             lineDatasetOptions(dataset: dataset, colorsHEX: [team!.primaryColor, team!.secondaryColor], teamColor: true)
             
             let lineData = LineChartData(dataSet: dataset)

@@ -49,6 +49,7 @@ class TeamOverviewViewController: UIViewController {
     //MARK: - View Controller Methods
     override func viewDidLoad() {
         super.viewDidLoad()
+
         registerXibFiles()
 
         setupView()
@@ -229,7 +230,7 @@ class TeamOverviewViewController: UIViewController {
             entry.data = teamStats[i] as AnyObject
             teamEntries.append(entry)
         }
-        let teamDataset = RadarChartDataSet(values: teamEntries, label: team!.abb)
+        let teamDataset = RadarChartDataSet(entries: teamEntries, label: team!.abb)
         setupDatasetOptions(dataset: teamDataset, color: UIColor(hexString: team!.primaryColor))
         datasets.append(teamDataset)
         
@@ -241,7 +242,7 @@ class TeamOverviewViewController: UIViewController {
             entry.data = leagueStats[i] as AnyObject
             leagueEntries.append(entry)
         }
-        let leagueDataset = RadarChartDataSet(values: leagueEntries, label: "League")
+        let leagueDataset = RadarChartDataSet(entries: leagueEntries, label: "League")
         setupDatasetOptions(dataset: leagueDataset)
         datasets.append(leagueDataset)
         
@@ -418,9 +419,9 @@ extension TeamOverviewViewController: IAxisValueFormatter {
         case 1.0:
             return "FG%"
         case 2.0:
-            return "3P%"
+            return "3FG%"
         case 3.0:
-            return "2P%"
+            return "2FG%"
         case 4.0:
             return "FT%"
         case 5.0:

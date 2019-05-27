@@ -10,84 +10,6 @@
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <scenes>
-        <!--Sign In View Controller-->
-        <scene sceneID="tne-QT-ifu">
-            <objects>
-                <viewController storyboardIdentifier="SignInViewController" id="BYZ-38-t0r" customClass="SignInViewController" customModule="EBL_Test" customModuleProvider="target" sceneMemberID="viewController">
-                    <view key="view" contentMode="scaleToFill" id="8bC-Xf-vdC">
-                        <rect key="frame" x="0.0" y="0.0" width="375" height="812"/>
-                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
-                        <subviews>
-                            <imageView userInteractionEnabled="NO" contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="bg" translatesAutoresizingMaskIntoConstraints="NO" id="Re2-Zc-si3">
-                                <rect key="frame" x="0.0" y="0.0" width="375" height="812"/>
-                            </imageView>
-                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="leading" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="cfb-KJ-Biw">
-                                <rect key="frame" x="57.666666666666657" y="708" width="260" height="40"/>
-                                <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-                                <constraints>
-                                    <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="260" id="Fd9-mz-bds"/>
-                                    <constraint firstAttribute="height" constant="40" id="sCU-0E-Oa1"/>
-                                </constraints>
-                                <fontDescription key="fontDescription" type="system" pointSize="18"/>
-                                <inset key="contentEdgeInsets" minX="20" minY="0.0" maxX="0.0" maxY="0.0"/>
-                                <inset key="titleEdgeInsets" minX="12" minY="0.0" maxX="0.0" maxY="0.0"/>
-                                <state key="normal" title="Sign in with Google" image="google-icon">
-                                    <color key="titleColor" red="0.49803921568627452" green="0.49803921568627452" blue="0.49803921568627452" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
-                                </state>
-                                <userDefinedRuntimeAttributes>
-                                    <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius">
-                                        <integer key="value" value="5"/>
-                                    </userDefinedRuntimeAttribute>
-                                </userDefinedRuntimeAttributes>
-                                <connections>
-                                    <action selector="googleSignInButtonPressed:" destination="BYZ-38-t0r" eventType="touchUpInside" id="TPN-xS-5p7"/>
-                                </connections>
-                            </button>
-                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="leading" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Dc8-GW-Jbc">
-                                <rect key="frame" x="57.666666666666657" y="648" width="260" height="40"/>
-                                <color key="backgroundColor" red="0.22899919748306274" green="0.31654170155525208" blue="0.51767021417617798" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
-                                <constraints>
-                                    <constraint firstAttribute="height" constant="40" id="Chi-42-uC4"/>
-                                    <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="260" id="NuN-xI-Ynq"/>
-                                </constraints>
-                                <inset key="contentEdgeInsets" minX="20" minY="0.0" maxX="0.0" maxY="0.0"/>
-                                <inset key="titleEdgeInsets" minX="12" minY="0.0" maxX="0.0" maxY="0.0"/>
-                                <state key="normal" title="Login with Facebook" image="facebook-logo">
-                                    <color key="titleColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-                                </state>
-                                <userDefinedRuntimeAttributes>
-                                    <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius">
-                                        <integer key="value" value="5"/>
-                                    </userDefinedRuntimeAttribute>
-                                </userDefinedRuntimeAttributes>
-                                <connections>
-                                    <action selector="facebookSignInButtonPressed:" destination="BYZ-38-t0r" eventType="touchUpInside" id="xex-UD-0d9"/>
-                                </connections>
-                            </button>
-                        </subviews>
-                        <color key="backgroundColor" red="0.99999600649999998" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
-                        <constraints>
-                            <constraint firstItem="Re2-Zc-si3" firstAttribute="bottom" secondItem="8bC-Xf-vdC" secondAttribute="bottom" id="0Fh-6v-3To"/>
-                            <constraint firstItem="Re2-Zc-si3" firstAttribute="top" secondItem="8bC-Xf-vdC" secondAttribute="top" id="7e2-Eo-Orc"/>
-                            <constraint firstItem="6Tk-OE-BBY" firstAttribute="bottom" secondItem="cfb-KJ-Biw" secondAttribute="bottom" constant="30" id="7qG-x7-bgP"/>
-                            <constraint firstItem="cfb-KJ-Biw" firstAttribute="centerX" secondItem="8bC-Xf-vdC" secondAttribute="centerX" id="Loa-DP-oHS"/>
-                            <constraint firstItem="cfb-KJ-Biw" firstAttribute="top" secondItem="Dc8-GW-Jbc" secondAttribute="bottom" constant="20" id="R07-gn-u6G"/>
-                            <constraint firstItem="Re2-Zc-si3" firstAttribute="leading" secondItem="6Tk-OE-BBY" secondAttribute="leading" id="gXc-wO-DB7"/>
-                            <constraint firstItem="cfb-KJ-Biw" firstAttribute="centerX" secondItem="8bC-Xf-vdC" secondAttribute="centerX" id="gZG-8o-ad7"/>
-                            <constraint firstItem="Dc8-GW-Jbc" firstAttribute="centerX" secondItem="8bC-Xf-vdC" secondAttribute="centerX" id="sRd-eB-T1U"/>
-                            <constraint firstItem="Re2-Zc-si3" firstAttribute="trailing" secondItem="6Tk-OE-BBY" secondAttribute="trailing" id="zPD-cI-1QL"/>
-                        </constraints>
-                        <viewLayoutGuide key="safeArea" id="6Tk-OE-BBY"/>
-                    </view>
-                    <connections>
-                        <outlet property="backgroundImage" destination="Re2-Zc-si3" id="SYj-ml-0Ug"/>
-                        <segue destination="MCd-A4-VdY" kind="show" identifier="SignInToHome" id="rqZ-JO-0Ci"/>
-                    </connections>
-                </viewController>
-                <placeholder placeholderIdentifier="IBFirstResponder" id="dkx-z0-nzr" sceneMemberID="firstResponder"/>
-            </objects>
-            <point key="canvasLocation" x="-26818" y="-4615"/>
-        </scene>
         <!--Splash Screen View Controller-->
         <scene sceneID="oPL-Qe-pzQ">
             <objects>
@@ -132,7 +54,6 @@
                     </view>
                     <connections>
                         <outlet property="loadingView" destination="7zY-gB-7RK" id="cT5-7k-iQW"/>
-                        <segue destination="BYZ-38-t0r" kind="show" identifier="SplashToSignIn" id="Taa-sQ-Th9"/>
                         <segue destination="MCd-A4-VdY" kind="show" identifier="SplashToHome" id="XrF-z3-bUW"/>
                     </connections>
                 </viewController>
@@ -1576,10 +1497,7 @@
         </scene>
     </scenes>
     <resources>
-        <image name="bg" width="333.33334350585938" height="222.33332824707031"/>
         <image name="ebl-logo" width="130" height="58.333332061767578"/>
-        <image name="facebook-logo" width="33.333332061767578" height="33.333332061767578"/>
-        <image name="google-icon" width="33.333332061767578" height="33.333332061767578"/>
         <image name="menu" width="20" height="20"/>
         <image name="standings-icon" width="33.333332061767578" height="33.333332061767578"/>
         <image name="stats-icon" width="25" height="25"/>
@@ -3329,7 +3247,4 @@ AQCHAAEAmQABAJwAAQChAAAAAAAABAEAAAAAAAAAbQAAAAAAAAAAAAAAAAABAKM
         </image>
         <image name="teams-icon" width="25" height="25"/>
     </resources>
-    <inferredMetricsTieBreakers>
-        <segue reference="XrF-z3-bUW"/>
-    </inferredMetricsTieBreakers>
 </document>

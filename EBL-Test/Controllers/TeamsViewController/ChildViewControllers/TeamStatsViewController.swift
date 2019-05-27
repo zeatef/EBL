@@ -32,13 +32,12 @@ class TeamStatsViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
         registerXibFiles()
         fetchData()
         setupDataArray()
         
     }
-    
+        
     func registerXibFiles(){
         teamGameStatsCollectionView.register(UINib(nibName: "StatsCollectionViewCell1", bundle: Bundle.main), forCellWithReuseIdentifier: "StatsCell1")
         teamGameStatsCollectionView.register(UINib(nibName: "StatsCollectionViewCell2", bundle: Bundle.main), forCellWithReuseIdentifier: "StatsCell2")

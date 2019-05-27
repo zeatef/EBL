@@ -33,7 +33,6 @@ class PlayersOverviewViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        
         //Register playerStatsCollectionView's custom Cells
         registerXibFiles()
         
@@ -113,8 +112,6 @@ extension PlayersOverviewViewController: UICollectionViewDataSource {
                 } else {
                     cell.showAnimatedGradientSkeleton(usingGradient: .init(baseColor: view.backgroundColor!))
                 }
-                cell.firstName.font = .systemFont(ofSize: 11)
-                cell.lastName.font = .systemFont(ofSize: 11)
 
                 cell.backgroundColor = UIColor(hexString: "484848")
 

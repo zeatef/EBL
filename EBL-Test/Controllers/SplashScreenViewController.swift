@@ -80,7 +80,7 @@ class SplashScreenViewController: UIViewController {
                     }
                 }
             } else {
-                self.performSegue(withIdentifier: "SplashToSignIn", sender: self)
+                print("Error: No User Authenticated!!! Add Login Page")
             }
         }
     }
