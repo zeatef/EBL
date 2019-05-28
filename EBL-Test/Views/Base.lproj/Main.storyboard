@@ -19,10 +19,10 @@
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <imageView userInteractionEnabled="NO" contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="ebl-logo" translatesAutoresizingMaskIntoConstraints="NO" id="3TC-fE-vBg">
-                                <rect key="frame" x="20" y="364" width="335" height="58.333333333333314"/>
+                                <rect key="frame" x="20" y="364" width="335" height="16"/>
                             </imageView>
                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="7zY-gB-7RK" customClass="NVActivityIndicatorView" customModule="NVActivityIndicatorView">
-                                <rect key="frame" x="162.66666666666666" y="522.33333333333337" width="50" height="50"/>
+                                <rect key="frame" x="162.66666666666666" y="480" width="50" height="50"/>
                                 <color key="backgroundColor" red="1" green="0.57810515169999999" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                 <constraints>
                                     <constraint firstAttribute="width" constant="50" id="eOu-BW-VFO"/>
@@ -1196,21 +1196,6 @@
             </objects>
             <point key="canvasLocation" x="-21348" y="-6032"/>
         </scene>
-        <!--Players Graphs View Controller-->
-        <scene sceneID="0y3-W2-IMI">
-            <objects>
-                <viewController storyboardIdentifier="PlayersGraphsViewController" id="25K-Y5-FmP" customClass="PlayersGraphsViewController" customModule="EBL_Test" customModuleProvider="target" sceneMemberID="viewController">
-                    <view key="view" contentMode="scaleToFill" id="Cy0-Ra-Axp">
-                        <rect key="frame" x="0.0" y="0.0" width="375" height="812"/>
-                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
-                        <color key="backgroundColor" red="0.80977719960000005" green="0.23973327990000001" blue="0.16793295320000001" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
-                        <viewLayoutGuide key="safeArea" id="3Og-hb-BNG"/>
-                    </view>
-                </viewController>
-                <placeholder placeholderIdentifier="IBFirstResponder" id="9Yh-Kn-hW9" userLabel="First Responder" sceneMemberID="firstResponder"/>
-            </objects>
-            <point key="canvasLocation" x="-19506" y="-6692"/>
-        </scene>
         <!--Team Master-->
         <scene sceneID="WQf-OH-AuZ">
             <objects>
@@ -1411,18 +1396,59 @@
         <!--Standings-->
         <scene sceneID="SA6-Ib-8KN">
             <objects>
-                <viewController id="gLI-Uf-D6E" sceneMemberID="viewController">
+                <viewController id="gLI-Uf-D6E" customClass="StandingsViewController" customModule="EBL_Test" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="xLk-0H-osB">
                         <rect key="frame" x="0.0" y="0.0" width="375" height="812"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="ykI-zx-nGd">
+                                <rect key="frame" x="0.0" y="88" width="375" height="641"/>
+                            </view>
+                            <scrollView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="YOm-gO-XQv">
+                                <rect key="frame" x="0.0" y="88" width="375" height="641"/>
+                                <subviews>
+                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="WGf-OP-KBW" userLabel="Content View">
+                                        <rect key="frame" x="0.0" y="0.0" width="375" height="641"/>
+                                        <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                    </view>
+                                </subviews>
+                                <constraints>
+                                    <constraint firstItem="WGf-OP-KBW" firstAttribute="height" secondItem="YOm-gO-XQv" secondAttribute="height" priority="250" id="C89-cj-g18"/>
+                                    <constraint firstAttribute="bottom" secondItem="WGf-OP-KBW" secondAttribute="bottom" id="ECo-Mn-av4"/>
+                                    <constraint firstItem="WGf-OP-KBW" firstAttribute="top" secondItem="YOm-gO-XQv" secondAttribute="top" id="IGM-pb-p2X"/>
+                                    <constraint firstItem="WGf-OP-KBW" firstAttribute="leading" secondItem="YOm-gO-XQv" secondAttribute="leading" id="IXt-Xr-kEc"/>
+                                    <constraint firstItem="WGf-OP-KBW" firstAttribute="width" secondItem="YOm-gO-XQv" secondAttribute="width" id="kdt-4m-4ET"/>
+                                    <constraint firstAttribute="trailing" secondItem="WGf-OP-KBW" secondAttribute="trailing" id="l22-Wy-zXx"/>
+                                </constraints>
+                            </scrollView>
+                        </subviews>
                         <color key="backgroundColor" red="0.34901960780000002" green="0.34901960780000002" blue="0.34901960780000002" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
+                        <constraints>
+                            <constraint firstItem="VoW-FR-1G0" firstAttribute="bottom" secondItem="YOm-gO-XQv" secondAttribute="bottom" id="6wh-vs-hEp"/>
+                            <constraint firstItem="ykI-zx-nGd" firstAttribute="top" secondItem="VoW-FR-1G0" secondAttribute="top" id="CCq-0J-ewJ"/>
+                            <constraint firstItem="ykI-zx-nGd" firstAttribute="leading" secondItem="VoW-FR-1G0" secondAttribute="leading" id="D79-ns-NcN"/>
+                            <constraint firstItem="VoW-FR-1G0" firstAttribute="trailing" secondItem="ykI-zx-nGd" secondAttribute="trailing" id="KGX-0z-7fm"/>
+                            <constraint firstItem="VoW-FR-1G0" firstAttribute="trailing" secondItem="YOm-gO-XQv" secondAttribute="trailing" id="KI2-n4-wgM"/>
+                            <constraint firstItem="YOm-gO-XQv" firstAttribute="top" secondItem="VoW-FR-1G0" secondAttribute="top" id="d5O-ZR-dSA"/>
+                            <constraint firstItem="YOm-gO-XQv" firstAttribute="leading" secondItem="VoW-FR-1G0" secondAttribute="leading" id="lL6-a1-13w"/>
+                            <constraint firstItem="VoW-FR-1G0" firstAttribute="bottom" secondItem="ykI-zx-nGd" secondAttribute="bottom" id="rE4-tb-A9c"/>
+                        </constraints>
                         <viewLayoutGuide key="safeArea" id="VoW-FR-1G0"/>
+                        <variation key="default">
+                            <mask key="subviews">
+                                <exclude reference="ykI-zx-nGd"/>
+                            </mask>
+                        </variation>
                     </view>
                     <navigationItem key="navigationItem" title="Standings" id="p72-Ez-r9z">
                         <barButtonItem key="leftBarButtonItem" title="Menu" image="menu" landscapeImage="menu" id="r2T-yA-ZXO">
                             <color key="tintColor" red="1" green="0.57810515169999999" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         </barButtonItem>
                     </navigationItem>
+                    <connections>
+                        <outlet property="groupsView" destination="YOm-gO-XQv" id="yAy-aF-xgR"/>
+                        <outlet property="tableView" destination="ykI-zx-nGd" id="59M-OF-X9U"/>
+                    </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="pT7-jt-8na" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
