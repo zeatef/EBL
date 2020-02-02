@@ -17,7 +17,7 @@ class AllTeamsViewController: UIViewController {
     
     let dbManager = DatabaseManager.sharedInstance
     
-    var teamsArray : [TeamDisplayData] = []
+    var teamsArray : [Team] = []
     var selectedTeamIndex : Int = 0
     
     override func viewDidLoad() {
@@ -28,8 +28,14 @@ class AllTeamsViewController: UIViewController {
     func setupViewController(){
         
         //Setup All Teams Array from Database
-        teamsArray = dbManager.teamsDisplayData
-        
+        dbManager.getAllTeams(source: .cache) { (teams, error) in
+            if let error = error {
+                print(error)
+            } else {
+                self.teamsArray = teams!
+                self.allTeamTableView.reloadData()
+            }
+        }
         //Register AllTeamsCell custom Cells
         allTeamTableView.register(UINib(nibName: "AllTeamsCell", bundle: nil) , forCellReuseIdentifier: "AllTeamsCell")
     }
@@ -54,8 +60,12 @@ extension AllTeamsViewController : UITableViewDataSource {
         return 58
     }
     
+    func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
+        return 35.0
+    }
+    
     func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
-        return "All Teams"
+        return "All Teams (Season 2018/2019)"
     }
     
     func tableView(_ tableView: UITableView, willDisplayHeaderView view: UIView, forSection section: Int){
@@ -73,8 +83,8 @@ extension AllTeamsViewController : UITableViewDataSource {
             return UITableViewCell()
         }
         cell.teamName.text = teamsArray[indexPath.row].teamName
-        cell.teamID = teamsArray[indexPath.row].teamID
-        cell.teamImage.kf.setImage(with: dbManager.getTeamImageURL(teamID: teamsArray[indexPath.row].teamID))
+        cell.teamID = teamsArray[indexPath.row].abb
+        cell.teamImage.kf.setImage(with: dbManager.getTeamImageURL(teamID: teamsArray[indexPath.row].abb))
         
         let backgroundView = UIView()
         backgroundView.backgroundColor = UIColor(hexString: "2b2b2b")

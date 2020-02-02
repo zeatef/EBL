@@ -119,6 +119,7 @@ PODS:
   - GTMSessionFetcher/Core (1.2.2)
   - Kingfisher (5.5.0)
   - leveldb-library (1.20)
+  - MKDropdownMenu (1.4)
   - nanopb (0.3.901):
     - nanopb/decode (= 0.3.901)
     - nanopb/encode (= 0.3.901)
@@ -143,6 +144,7 @@ DEPENDENCIES:
   - Firebase/Firestore
   - Firebase/Storage
   - Kingfisher (~> 5.0)
+  - MKDropdownMenu
   - NVActivityIndicatorView
   - Segmentio (~> 3.3)
   - SideMenu
@@ -170,6 +172,7 @@ SPEC REPOS:
     - GTMSessionFetcher
     - Kingfisher
     - leveldb-library
+    - MKDropdownMenu
     - nanopb
     - NVActivityIndicatorView
     - Protobuf
@@ -198,6 +201,7 @@ SPEC CHECKSUMS:
   GTMSessionFetcher: 61bb0f61a4cb560030f1222021178008a5727a23
   Kingfisher: 6fe5e67a90fd335e49b0f5c075ff55ac5ebedd94
   leveldb-library: 08cba283675b7ed2d99629a4bc5fd052cd2bb6a5
+  MKDropdownMenu: 269df4a41d21a1db684ce8bc709befe419fc5bae
   nanopb: 2901f78ea1b7b4015c860c2fdd1ea2fee1a18d48
   NVActivityIndicatorView: b19ddab2576f805cbe0fb2306cba3476e09a1dea
   Protobuf: 7a877b7f3e5964e3fce995e2eb323dbc6831bb5a
@@ -206,6 +210,6 @@ SPEC CHECKSUMS:
   SkeletonView: 6cbb80f82f8bdee3f9093e2fa03b84819b4bd826
   SVProgressHUD: 1428aafac632c1f86f62aa4243ec12008d7a51d6
 
-PODFILE CHECKSUM: 072f1365e72baa3389e6aabd1857b1c31ab7a436
+PODFILE CHECKSUM: 06838e356df5d32540076a33d28e0b25084f801d
 
 COCOAPODS: 1.6.1

@@ -20,6 +20,7 @@ target 'EBL-Test' do
   pod 'Kingfisher', '~> 5.0'
   pod 'Charts'
   pod 'SkeletonView'
+  pod 'MKDropdownMenu'
   
 end
 

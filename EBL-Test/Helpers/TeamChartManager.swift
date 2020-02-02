@@ -14,7 +14,7 @@ class TeamChartManager {
     //MARK:- Instance Variables
     var chart : CombinedChartView
     
-    var team : TeamDisplayData?
+    var team : Team?
     
     var allOpponentsSelected : Bool = true {
         didSet {
@@ -27,15 +27,15 @@ class TeamChartManager {
     var stat : Int = 1
     var period : Int = 1
     
-    var allGames : [TeamGameStats] = [] {
+    var allGames : [SingleGameStatistics] = [] {
         didSet {
             initializeChartView()
         }
     }
-    var gamesToFilter : [TeamGameStats] = []
+    var gamesToFilter : [SingleGameStatistics] = []
 
     //MARK:- Initialization
-    init(chartView: CombinedChartView, team: TeamDisplayData) {
+    init(chartView: CombinedChartView, team: Team) {
         self.chart = chartView
         chart.noDataText = "No games played against the selected teams yet."
         chart.noDataTextColor = UIColor(hexString: "E1E1E1")
@@ -44,7 +44,6 @@ class TeamChartManager {
     }
     
     func initializeChartView() {
-        gamesToFilter = addGamesRandomly(numberOfGames: 40, games: allGames)
         setupChartViewSettings()
         setupChartAxes()
         setupChartLegend()
@@ -103,33 +102,8 @@ class TeamChartManager {
         }
     }
     
-    //MARK:- Add Random Games Manually
-    func addGamesRandomly(numberOfGames count: Int, games: [TeamGameStats]) -> [TeamGameStats] {
-        if(count == 0) {
-            return games
-        }
-        
-        var result : [TeamGameStats] = []
-        
-        for game in games {
-            result.append(game.copy() as! TeamGameStats)
-        }
-        
-        result.sort(by: {
-            return $0.date.compare($1.date) == .orderedAscending
-        })
-        for _ in 0..<count {
-            let lastDate = result.last!.date
-            let index = Int.random(in: 0..<games.count)
-            let gameToAdd = games[index].copy()
-            result.append(gameToAdd as! TeamGameStats)
-            result.last!.date = Calendar.current.date(byAdding: .day, value: 1, to: lastDate)!
-        }
-        return result
-    }
-    
     //MARK: - Filters Functions
-    func filterGames() -> [TeamGameStats] {
+    func filterGames() -> [SingleGameStatistics] {
         var result = gamesToFilter
 
         result.sort(by: {
@@ -142,7 +116,7 @@ class TeamChartManager {
         return result
     }
     
-    func filterPeriod(games: [TeamGameStats]) -> [TeamGameStats] {
+    func filterPeriod(games: [SingleGameStatistics]) -> [SingleGameStatistics] {
         switch period {
         case 1:
             return Array(games.suffix(5))
@@ -155,11 +129,11 @@ class TeamChartManager {
         }
     }
     
-    func filterOpponents(games: [TeamGameStats]) -> [TeamGameStats] {
+    func filterOpponents(games: [SingleGameStatistics]) -> [SingleGameStatistics] {
         if(allOpponentsSelected) {
             return games
         } else {
-            var result : [TeamGameStats] = []
+            var result : [SingleGameStatistics] = []
             for game in games {
                 for opponent in opponentsSelected {
                     if game.opponentAbb == opponent {
@@ -172,16 +146,16 @@ class TeamChartManager {
     }
     
     //MARK:- Update Dataset Methods
-    func setChartData(games: [TeamGameStats]) {
+    func setChartData(games: [SingleGameStatistics]) {
         var combinedData : CombinedChartData? = nil
         if(stat == 1) {
             var teamEntries : [ChartDataEntry] = []
             var opponentEntries : [ChartDataEntry] = []
             
             let teamData = [
-                "team" : team!.teamID,
+                "team" : team!.abb,
                 "opponent" : games[0].opponentAbb,
-                "home" : games[0].home,
+                "home" : games[0].isHome,
                 "win" : games[0].PTS > games[0].opponentPTS,
                 "teamPTS" : games[0].PTS,
                 "opponentPTS" : games[0].opponentPTS,
@@ -192,9 +166,9 @@ class TeamChartManager {
             
             for i in 0..<games.count {
                 let teamData = [
-                    "team" : team!.teamID,
+                    "team" : team!.abb,
                     "opponent" : games[i].opponentAbb,
-                    "home" : games[i].home,
+                    "home" : games[i].isHome,
                     "win" : games[i].PTS > games[i].opponentPTS,
                     "teamPTS" : games[i].PTS,
                     "opponentPTS" : games[i].opponentPTS,
@@ -202,8 +176,8 @@ class TeamChartManager {
                 teamEntries.append(ChartDataEntry(x: Double(i), y: Double(games[i].PTS), data: teamData as AnyObject))
                 let opponentData = [
                     "team" : games[i].opponentAbb,
-                    "opponent" : team!.teamID,
-                    "home" : !games[i].home,
+                    "opponent" : team!.abb,
+                    "home" : !games[i].isHome,
                     "win" : !(games[i].PTS > games[i].opponentPTS),
                     "teamPTS" : games[i].opponentPTS,
                     "opponentPTS" : games[i].PTS,
@@ -229,23 +203,23 @@ class TeamChartManager {
             var entries : [ChartDataEntry] = []
             
             var data = [
-                "team" : team!.teamID,
+                "team" : team!.abb,
                 "opponent" : games[0].opponentAbb,
-                "home" : games[0].home,
+                "home" : games[0].isHome,
                 "win" : games[0].PTS > games[0].opponentPTS,
-                "stat" : "FG%: \(Double(games[0].avgFGP*100))",
+                "stat" : "FG%: \(Double(games[0].FG.percentage*100))",
                 ] as [String : Any]
             
-            entries.append(ChartDataEntry(x: Double(0), y: Double(games[0].avgFGP*100), data: data as AnyObject))
+            entries.append(ChartDataEntry(x: Double(0), y: Double(games[0].FG.percentage*100), data: data as AnyObject))
             for i in 0..<games.count {
                 data = [
-                    "team" : team!.teamID,
+                    "team" : team!.abb,
                     "opponent" : games[i].opponentAbb,
-                    "home" : games[i].home,
+                    "home" : games[i].isHome,
                     "win" : games[i].PTS > games[i].opponentPTS,
-                    "stat" : "FG%: \(Double(games[i].avgFGP*100))",
+                    "stat" : "FG%: \(Double(games[i].FG.percentage*100))",
                     ] as [String : Any]
-                entries.append(ChartDataEntry(x: Double(i), y: Double(games[i].avgFGP*100), data: data as AnyObject))
+                entries.append(ChartDataEntry(x: Double(i), y: Double(games[i].FG.percentage*100), data: data as AnyObject))
             }
             
             let dataset = LineChartDataSet(entries: entries, label: "Field Goals %")
@@ -260,23 +234,23 @@ class TeamChartManager {
             var entries : [ChartDataEntry] = []
             
             var data = [
-                "team" : team!.teamID,
+                "team" : team!.abb,
                 "opponent" : games[0].opponentAbb,
-                "home" : games[0].home,
+                "home" : games[0].isHome,
                 "win" : games[0].PTS > games[0].opponentPTS,
-                "stat" : "3FG%: \(Double(games[0].avg3FGP*100))",
+                "stat" : "3FG%: \(Double(games[0].FG3.percentage*100))",
                 ] as [String : Any]
             
-            entries.append(ChartDataEntry(x: Double(0), y: Double(games[0].avg3FGP*100), data: data as AnyObject))
+            entries.append(ChartDataEntry(x: Double(0), y: Double(games[0].FG3.percentage*100), data: data as AnyObject))
             for i in 0..<games.count {
                 data = [
-                    "team" : team!.teamID,
+                    "team" : team!.abb,
                     "opponent" : games[i].opponentAbb,
-                    "home" : games[i].home,
+                    "home" : games[i].isHome,
                     "win" : games[i].PTS > games[i].opponentPTS,
-                    "stat" : "3FG%: \(Double(games[i].avg3FGP*100))",
+                    "stat" : "3FG%: \(Double(games[i].FG3.percentage*100))",
                     ] as [String : Any]
-                entries.append(ChartDataEntry(x: Double(i), y: Double(games[i].avg3FGP*100), data: data as AnyObject))
+                entries.append(ChartDataEntry(x: Double(i), y: Double(games[i].FG3.percentage*100), data: data as AnyObject))
             }
             
             let dataset = LineChartDataSet(entries: entries, label: "3PTS Field Goals %")
@@ -291,23 +265,23 @@ class TeamChartManager {
             var entries : [ChartDataEntry] = []
             
             var data = [
-                "team" : team!.teamID,
+                "team" : team!.abb,
                 "opponent" : games[0].opponentAbb,
-                "home" : games[0].home,
+                "home" : games[0].isHome,
                 "win" : games[0].PTS > games[0].opponentPTS,
-                "stat" : "2FG%: \(Double(games[0].avg2FGP*100))",
+                "stat" : "2FG%: \(Double(games[0].FG2.percentage*100))",
                 ] as [String : Any]
             
-            entries.append(ChartDataEntry(x: Double(0), y: Double(games[0].avg2FGP*100), data: data as AnyObject))
+            entries.append(ChartDataEntry(x: Double(0), y: Double(games[0].FG2.percentage*100), data: data as AnyObject))
             for i in 0..<games.count {
                 data = [
-                    "team" : team!.teamID,
+                    "team" : team!.abb,
                     "opponent" : games[i].opponentAbb,
-                    "home" : games[i].home,
+                    "home" : games[i].isHome,
                     "win" : games[i].PTS > games[i].opponentPTS,
-                    "stat" : "2FG%: \(Double(games[i].avg2FGP*100))",
+                    "stat" : "2FG%: \(Double(games[i].FG2.percentage*100))",
                     ] as [String : Any]
-                entries.append(ChartDataEntry(x: Double(i), y: Double(games[i].avg2FGP*100), data: data as AnyObject))
+                entries.append(ChartDataEntry(x: Double(i), y: Double(games[i].FG2.percentage*100), data: data as AnyObject))
             }
             
             let dataset = LineChartDataSet(entries: entries, label: "2PTS Field Goals %")
@@ -322,23 +296,23 @@ class TeamChartManager {
             var entries : [ChartDataEntry] = []
             
             var data = [
-                "team" : team!.teamID,
+                "team" : team!.abb,
                 "opponent" : games[0].opponentAbb,
-                "home" : games[0].home,
+                "home" : games[0].isHome,
                 "win" : games[0].PTS > games[0].opponentPTS,
-                "stat" : "FT%: \(Double(games[0].avgFTP*100))",
+                "stat" : "FT%: \(Double(games[0].FT.percentage*100))",
                 ] as [String : Any]
             
-            entries.append(ChartDataEntry(x: Double(0), y: Double(games[0].avgFTP*100), data: data as AnyObject))
+            entries.append(ChartDataEntry(x: Double(0), y: Double(games[0].FT.percentage*100), data: data as AnyObject))
             for i in 0..<games.count {
                 data = [
-                    "team" : team!.teamID,
+                    "team" : team!.abb,
                     "opponent" : games[i].opponentAbb,
-                    "home" : games[i].home,
+                    "home" : games[i].isHome,
                     "win" : games[i].PTS > games[i].opponentPTS,
-                    "stat" : "FT%: \(Double(games[i].avgFGP*100))",
+                    "stat" : "FT%: \(Double(games[i].FT.percentage*100))",
                     ] as [String : Any]
-                entries.append(ChartDataEntry(x: Double(i), y: Double(games[i].avgFTP*100), data: data as AnyObject))
+                entries.append(ChartDataEntry(x: Double(i), y: Double(games[i].FT.percentage*100), data: data as AnyObject))
             }
             
             let dataset = LineChartDataSet(entries: entries, label: "Free Throws %")
@@ -353,9 +327,9 @@ class TeamChartManager {
             var entries : [ChartDataEntry] = []
             
             var data = [
-                "team" : team!.teamID,
+                "team" : team!.abb,
                 "opponent" : games[0].opponentAbb,
-                "home" : games[0].home,
+                "home" : games[0].isHome,
                 "win" : games[0].PTS > games[0].opponentPTS,
                 "stat" : "AST: \((games[0].AST))",
                 ] as [String : Any]
@@ -363,9 +337,9 @@ class TeamChartManager {
             entries.append(ChartDataEntry(x: Double(0), y: Double(games[0].AST), data: data as AnyObject))
             for i in 0..<games.count {
                 data = [
-                    "team" : team!.teamID,
+                    "team" : team!.abb,
                     "opponent" : games[i].opponentAbb,
-                    "home" : games[i].home,
+                    "home" : games[i].isHome,
                     "win" : games[i].PTS > games[i].opponentPTS,
                     "stat" : "AST: \((games[i].AST))",
                     ] as [String : Any]
@@ -386,33 +360,33 @@ class TeamChartManager {
             var drbEntries : [ChartDataEntry] = []
             
             var teamData = [
-                "team" : team!.teamID,
+                "team" : team!.abb,
                 "opponent" : games[0].opponentAbb,
-                "home" : games[0].home,
+                "home" : games[0].isHome,
                 "win" : games[0].PTS > games[0].opponentPTS,
-                "stat1" : "REB: \((games[0].REB))",
-                "stat2" : "DRB: \((games[0].DRB))",
-                "stat3" : "ORB: \((games[0].ORB))"
+                "stat1" : "REB: \((games[0].TREB))",
+                "stat2" : "DRB: \((games[0].DREB))",
+                "stat3" : "ORB: \((games[0].OREB))"
             ] as [String : Any]
             
-            rebEntries.append(ChartDataEntry(x: Double(0), y: Double(games[0].REB), data: teamData as AnyObject))
-            orbEntries.append(ChartDataEntry(x: Double(0), y: Double(games[0].ORB), data: teamData as AnyObject))
-            drbEntries.append(ChartDataEntry(x: Double(0), y: Double(games[0].DRB), data: teamData as AnyObject))
+            rebEntries.append(ChartDataEntry(x: Double(0), y: Double(games[0].TREB), data: teamData as AnyObject))
+            orbEntries.append(ChartDataEntry(x: Double(0), y: Double(games[0].OREB), data: teamData as AnyObject))
+            drbEntries.append(ChartDataEntry(x: Double(0), y: Double(games[0].DREB), data: teamData as AnyObject))
 
             for i in 0..<games.count {
                 teamData = [
-                    "team" : team!.teamID,
+                    "team" : team!.abb,
                     "opponent" : games[i].opponentAbb,
-                    "home" : games[i].home,
+                    "home" : games[i].isHome,
                     "win" : games[i].PTS > games[i].opponentPTS,
-                    "stat1" : "REB: \((games[i].REB))",
-                    "stat2" : "DRB: \((games[i].DRB))",
-                    "stat3" : "ORB: \((games[i].ORB))"
+                    "stat1" : "REB: \((games[i].TREB))",
+                    "stat2" : "DRB: \((games[i].DREB))",
+                    "stat3" : "ORB: \((games[i].OREB))"
                     ] as [String : Any]
                 
-                rebEntries.append(ChartDataEntry(x: Double(i), y: Double(games[i].REB), data: teamData as AnyObject))
-                orbEntries.append(ChartDataEntry(x: Double(i), y: Double(games[i].ORB), data: teamData as AnyObject))
-                drbEntries.append(ChartDataEntry(x: Double(i), y: Double(games[i].DRB), data: teamData as AnyObject))
+                rebEntries.append(ChartDataEntry(x: Double(i), y: Double(games[i].TREB), data: teamData as AnyObject))
+                orbEntries.append(ChartDataEntry(x: Double(i), y: Double(games[i].OREB), data: teamData as AnyObject))
+                drbEntries.append(ChartDataEntry(x: Double(i), y: Double(games[i].DREB), data: teamData as AnyObject))
             }
             
             let rebDataset = LineChartDataSet(entries: rebEntries, label: "Total REB")
@@ -435,9 +409,9 @@ class TeamChartManager {
             var entries : [ChartDataEntry] = []
             
             var data = [
-                "team" : team!.teamID,
+                "team" : team!.abb,
                 "opponent" : games[0].opponentAbb,
-                "home" : games[0].home,
+                "home" : games[0].isHome,
                 "win" : games[0].PTS > games[0].opponentPTS,
                 "stat" : "STL: \((games[0].STL))",
                 ] as [String : Any]
@@ -445,9 +419,9 @@ class TeamChartManager {
             entries.append(ChartDataEntry(x: Double(0), y: Double(games[0].STL), data: data as AnyObject))
             for i in 0..<games.count {
                 data = [
-                    "team" : team!.teamID,
+                    "team" : team!.abb,
                     "opponent" : games[i].opponentAbb,
-                    "home" : games[i].home,
+                    "home" : games[i].isHome,
                     "win" : games[i].PTS > games[i].opponentPTS,
                     "stat" : "STL: \((games[i].STL))",
                     ] as [String : Any]
@@ -466,9 +440,9 @@ class TeamChartManager {
             var entries : [ChartDataEntry] = []
             
             var data = [
-                "team" : team!.teamID,
+                "team" : team!.abb,
                 "opponent" : games[0].opponentAbb,
-                "home" : games[0].home,
+                "home" : games[0].isHome,
                 "win" : games[0].PTS > games[0].opponentPTS,
                 "stat" : "TO: \((games[0].TO))",
                 ] as [String : Any]
@@ -476,9 +450,9 @@ class TeamChartManager {
             entries.append(ChartDataEntry(x: Double(0), y: Double(games[0].TO), data: data as AnyObject))
             for i in 0..<games.count {
                 data = [
-                    "team" : team!.teamID,
+                    "team" : team!.abb,
                     "opponent" : games[i].opponentAbb,
-                    "home" : games[i].home,
+                    "home" : games[i].isHome,
                     "win" : games[i].PTS > games[i].opponentPTS,
                     "stat" : "TO: \((games[i].TO))",
                     ] as [String : Any]
@@ -497,9 +471,9 @@ class TeamChartManager {
             var entries : [ChartDataEntry] = []
             
             var data = [
-                "team" : team!.teamID,
+                "team" : team!.abb,
                 "opponent" : games[0].opponentAbb,
-                "home" : games[0].home,
+                "home" : games[0].isHome,
                 "win" : games[0].PTS > games[0].opponentPTS,
                 "stat" : "BLK: \((games[0].BLK))",
                 ] as [String : Any]
@@ -507,9 +481,9 @@ class TeamChartManager {
             entries.append(ChartDataEntry(x: Double(0), y: Double(games[0].BLK), data: data as AnyObject))
             for i in 0..<games.count {
                 data = [
-                    "team" : team!.teamID,
+                    "team" : team!.abb,
                     "opponent" : games[i].opponentAbb,
-                    "home" : games[i].home,
+                    "home" : games[i].isHome,
                     "win" : games[i].PTS > games[i].opponentPTS,
                     "stat" : "BLK: \((games[i].BLK))",
                     ] as [String : Any]
@@ -556,14 +530,14 @@ class TeamChartManager {
         dataset.highlightLineWidth = 2
     }
     
-    func setAxisLabels(games: [TeamGameStats]) {
+    func setAxisLabels(games: [SingleGameStatistics]) {
         var xAxisLabels : [String] = []
         
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "dd MMM"
         
         for item in games {
-            let home = item.home ? "vs " : "at "
+            let home = item.isHome ? "vs " : "at "
             xAxisLabels.append(home + item.opponentAbb + "\n" + dateFormatter.string(from: item.date))
         }
         

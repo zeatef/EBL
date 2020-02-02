@@ -25,19 +25,30 @@
                         <color key="textColor" red="0.99999600649999998" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <nil key="highlightedColor"/>
                     </label>
+                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="b3X-Nk-Vse">
+                        <rect key="frame" x="89.5" y="0.0" width="0.5" height="40"/>
+                        <color key="backgroundColor" red="0.34901960784313724" green="0.34901960784313724" blue="0.34901960784313724" alpha="1" colorSpace="calibratedRGB"/>
+                        <constraints>
+                            <constraint firstAttribute="width" constant="0.29999999999999999" id="cbq-bP-4DJ"/>
+                        </constraints>
+                    </view>
                 </subviews>
             </view>
             <color key="backgroundColor" red="0.34901960784313724" green="0.34901960784313724" blue="0.34901960784313724" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
             <constraints>
                 <constraint firstAttribute="bottom" secondItem="kwI-WB-lbi" secondAttribute="bottom" id="6xU-bE-7mJ"/>
+                <constraint firstAttribute="bottom" secondItem="b3X-Nk-Vse" secondAttribute="bottom" id="86U-Pf-4Cm"/>
                 <constraint firstItem="kwI-WB-lbi" firstAttribute="leading" secondItem="gTV-IL-0wX" secondAttribute="leading" constant="5" id="GCh-T6-MUd"/>
+                <constraint firstItem="b3X-Nk-Vse" firstAttribute="top" secondItem="gTV-IL-0wX" secondAttribute="top" id="Jl5-cw-xBZ"/>
                 <constraint firstAttribute="trailing" secondItem="kwI-WB-lbi" secondAttribute="trailing" constant="5" id="UQX-5K-lek"/>
                 <constraint firstItem="kwI-WB-lbi" firstAttribute="top" secondItem="gTV-IL-0wX" secondAttribute="top" id="dVz-4F-4hd"/>
+                <constraint firstAttribute="trailing" secondItem="b3X-Nk-Vse" secondAttribute="trailing" id="olD-Zm-RQU"/>
             </constraints>
             <viewLayoutGuide key="safeArea" id="ZTg-uK-7eu"/>
             <connections>
                 <outlet property="titleLabel" destination="kwI-WB-lbi" id="uGj-C6-I89"/>
             </connections>
+            <point key="canvasLocation" x="52.799999999999997" y="48.575712143928037"/>
         </collectionViewCell>
     </objects>
 </document>

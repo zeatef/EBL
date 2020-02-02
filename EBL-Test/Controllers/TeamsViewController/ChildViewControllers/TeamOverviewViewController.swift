@@ -15,14 +15,8 @@ import SkeletonView
 
 class TeamOverviewViewController: UIViewController {
     
-    //MARK: - Initialize Outlets
-    @IBOutlet weak var teamImage: UIImageView!
-    @IBOutlet weak var leagueRanking: UILabel!
-    @IBOutlet weak var teamRecord: UILabel!
-    @IBOutlet weak var headCoach: UILabel!
-    @IBOutlet weak var hometown: UILabel!
-    @IBOutlet weak var teamOverviewView: UIView!
-    @IBOutlet weak var teamOverviewBottomBorder: UIView!
+    //MARK: - IBOutlets
+    @IBOutlet weak var scrollView: UIScrollView!
     @IBOutlet weak var topPerformersVeiw: UIView!
     @IBOutlet weak var topPerformersCollectionView: UICollectionView!
     @IBOutlet weak var gridLayout: GridTableCustomLayout! {
@@ -34,24 +28,26 @@ class TeamOverviewViewController: UIViewController {
     @IBOutlet weak var teamAveragesView: UIView!
     @IBOutlet weak var chartView: RadarChartView!
     
-    var parentVC : TeamsViewController?
 
     
     //MARK: - Instance Variables
+    var parentVC : TeamsViewController?
     let dbManager = DatabaseManager.sharedInstance
-    var teamRef = ""
     var team : Team?
-    var playerDataArray = [[String]]()
+    var topPerformersData : [[String]] = []
     var teamStats : [Double] = []
     var leagueStats : [Double] = []
+    lazy var refresher: UIRefreshControl = {
+        let refreshControl = UIRefreshControl()
+        refreshControl.tintColor = UIColor(hexString: "E1E1E1")
+        refreshControl.addTarget(self, action: #selector(reloadData), for: .valueChanged)
+        return refreshControl
+    }()
     
-    
-    //MARK: - View Controller Methods
+    //MARK: - Default Functions
     override func viewDidLoad() {
         super.viewDidLoad()
-
         registerXibFiles()
-
         setupView()
     }
     
@@ -61,55 +57,48 @@ class TeamOverviewViewController: UIViewController {
         topPerformersCollectionView.register(UINib(nibName: "StatsCollectionViewCell3", bundle: Bundle.main), forCellWithReuseIdentifier: "StatsCell3")
     }
     
+    //MARK:- Setup View Controller Functions
     func setupView(){
+        scrollView.refreshControl = refresher
         let primaryColor = UIColor(hexString: parentVC!.team!.primaryColor)!
         let secondaryColor = UIColor(hexString: parentVC!.team!.secondaryColor)!
 
-        if(parentVC!.team!.teamID == "ASC") {
-            teamOverviewBottomBorder.backgroundColor = UIColor(gradientStyle: UIGradientStyle.topToBottom, withFrame: teamOverviewBottomBorder.frame, andColors:[primaryColor, secondaryColor])
+        if(parentVC!.team!.abb == "ASC") {
+            parentVC!.bottomBorder.backgroundColor = UIColor(gradientStyle: UIGradientStyle.topToBottom, withFrame: parentVC!.bottomBorder.frame, andColors:[primaryColor, secondaryColor])
         } else {
-            teamOverviewBottomBorder.backgroundColor = UIColor(gradientStyle: UIGradientStyle.leftToRight, withFrame: teamOverviewBottomBorder.frame, andColors:[primaryColor, primaryColor, secondaryColor, secondaryColor, primaryColor, primaryColor])
+            parentVC!.bottomBorder.backgroundColor = UIColor(gradientStyle: UIGradientStyle.leftToRight, withFrame: parentVC!.bottomBorder.frame, andColors:[primaryColor, primaryColor, secondaryColor, secondaryColor, primaryColor, primaryColor])
         }
         showLoadingViews()
-        fetchViewData { (error) in
+        parentVC!.setupTeamInfo(source: .cache) { (error) in
             if let error = error {
                 print(error)
             } else {
+                self.team = self.parentVC!.team
                 self.updateViewData()
             }
         }
     }
     
-    func fetchViewData(completion: @escaping (Error?) -> Void) {
-        let start = DispatchTime.now()
-
-        dbManager.getTeamInfo(forTeamRef: teamRef, completion: { (error, team) in
+    @objc func reloadData() {
+        parentVC!.setupTeamInfo(source: .server) { (error) in
             if let error = error {
-                completion(error)
+                print(error)
             } else {
-                self.team = team!
-                self.parentVC?.getPlayersData(completion: { (error) in
-                    if let error = error {
-                        print(error)
-                    } else {
-                        let end = DispatchTime.now()
-                        let difference = end.uptimeNanoseconds - start.uptimeNanoseconds
-                        print("Completed in \(Double(difference) / 1_000_000_000) seconds.")
-                        completion(nil)
-                    }
-                })
+                self.team = self.parentVC!.team
+                self.refresher.endRefreshing()
+                self.updateViewData()
             }
-        })
+        }
     }
-    
+
     func showLoadingViews() {
-        teamOverviewView.showAnimatedGradientSkeleton(usingGradient: .init(baseColor: view.backgroundColor!))
+        parentVC!.teamOverview.showAnimatedGradientSkeleton(usingGradient: .init(baseColor: view.backgroundColor!))
         topPerformersVeiw.showAnimatedGradientSkeleton(usingGradient: .init(baseColor: view.backgroundColor!))
         teamAveragesView.showAnimatedGradientSkeleton(usingGradient: .init(baseColor: view.backgroundColor!))
     }
     
     func hideLoadingViews() {
-        teamOverviewView.hideSkeleton()
+        parentVC!.teamOverview.hideSkeleton()
         topPerformersVeiw.hideSkeleton()
         teamAveragesView.hideSkeleton()
         
@@ -118,68 +107,80 @@ class TeamOverviewViewController: UIViewController {
     func updateViewData() {
         setupTeamOverviewSubview()
         setupTopPerformersSubview()
-        setupTeamAveragesSubview()
-        
-        hideLoadingViews()
+        setupTeamAveragesSubview { (error) in
+            if let error = error {
+                print(error)
+            } else {
+                self.hideLoadingViews()
+            }
+        }
     }
     
-    //MARK:- Setup Team Overview Subview
+    //MARK:- Setup Subviews
     
     func setupTeamOverviewSubview(){
         //TeamOverview Subview
         let formatter = NumberFormatter()
         formatter.numberStyle = .ordinal
         
-        teamImage.kf.setImage(with: dbManager.getTeamImageURL(teamID: team!.abb))
-        leagueRanking.text = formatter.string(from: team!.leagueStanding as NSNumber)!
-        headCoach.text = team!.headCoach
-        hometown.text = team!.location
-        teamRecord.text = "\(team!.wins)-\(team!.losses)"
+        parentVC!.teamImage.kf.setImage(with: dbManager.getTeamImageURL(teamID: team!.abb))
+//        leagueRanking.text = formatter.string(from: team!.leagueStanding as NSNumber)!
+        parentVC!.headCoach.text = team!.headCoach
+        parentVC!.hometown.text = team!.location
+        parentVC!.seasonRecord.text = "\(team!.statistics!.wins!)-\(team!.statistics!.losses!)"
         
     }
     
-    //MARK:- Setup Top Performers Subview
     
     func setupTopPerformersSubview() {
-        setupPlayersDataArray()
-    }
-    
-    func setupPlayersDataArray() {
-        let statTitles = ["", "", "PPG", "FG%", "3FG%", "2FG%", "FT%" ,"APG", "RPG", "STPG", "BLKPG", "EFPG"]
-        
-        parentVC!.players.sort(by: {
-            if($0.playerTotalStats.avgEFF == $1.playerTotalStats.avgEFF) {
-                return $0.nickname < $1.nickname
-            } else {
-                return $0.playerTotalStats.avgEFF > $1.playerTotalStats.avgEFF
+        if(team!.statistics!.gamesPlayed == 0) {
+            topPerformersVeiw.isHidden = true
+        } else {
+            topPerformersData = []
+            topPerformersData.append(["", "PPG", "FG%", "3FG%", "2FG%", "FT%", "APG", "RPG", "STPG", "BLKPG", "EFFPG"])
+            for player in team!.top3Players! {
+                let stats = [
+                    player.knownAs.first,
+                    player.knownAs.last,
+                    "\(player.statistics!.PTS.perGame)",
+                    "\(String(format: "%.1f", player.statistics!.FG.percentage*100.0))%",
+                    "\(String(format: "%.1f", player.statistics!.FG3.percentage*100.0))%",
+                    "\(String(format: "%.1f", player.statistics!.FG2.percentage*100.0))%",
+                    "\(String(format: "%.1f", player.statistics!.FT.percentage*100.0))%",
+                    "\(player.statistics!.AST.perGame)",
+                    "\(player.statistics!.TREB.perGame)",
+                    "\(player.statistics!.STL.perGame)",
+                    "\(player.statistics!.BLK.perGame)",
+                    "\(player.statistics!.EFF!.perGame)"
+                ]
+                topPerformersData.append(stats)
             }
-        })
-        
-        playerDataArray.append(statTitles)
-        
-        for i in 0...2 {
-            let player = parentVC!.players[i]
-            self.playerDataArray.append([player.firstName, player.lastName, "\(player.playerTotalStats.avgPTS)", "\(player.playerTotalStats.avgFGP)","\(player.playerTotalStats.avg3FGP)", "\(player.playerTotalStats.avg2FGP)", "\(player.playerTotalStats.avgFTP)", "\(player.playerTotalStats.avgAST)", "\(player.playerTotalStats.avgTREB)", "\(player.playerTotalStats.avgSTL)", "\(player.playerTotalStats.avgBLK)",  "\(player.playerTotalStats.avgEFF)"])
+            topPerformersCollectionView.reloadData()
         }
-        
-        self.topPerformersCollectionView.reloadData()
     }
     
-    //MARK:- Setup Team Averages Subview
     
-    func setupTeamAveragesSubview() {
-        setupChartView()
-        
+    func setupTeamAveragesSubview(completion: @escaping (Error?) -> Void) {
+        if(team!.statistics!.gamesPlayed == 100) {
+            teamAveragesView.removeFromSuperview()
+            self.view.updateConstraints()
+            completion(nil)
+        } else {
+            setupChartViewSettings()
+            setupChartLegend()
+            setupChartAxes()
+            setupChartData { (error) in
+                if let error = error {
+                    completion(error)
+                } else {
+                    self.chartView.animate(xAxisDuration: 0.5, yAxisDuration: 0.5, easingOption: .easeOutQuart)
+                    completion(nil)
+                }
+            }
+        }
     }
     
-    func setupChartView() {
-        setupChartViewSettings()
-        setupChartLegend()
-        setupChartAxes()
-        setupChartData()
-        chartView.animate(xAxisDuration: 0.5, yAxisDuration: 0.5, easingOption: .easeOutQuart)
-    }
-    
+    //MARK:- Team Averages Subview Functions
     func setupChartViewSettings() {
         chartView.webLineWidth = 1
         chartView.innerWebLineWidth = 1
@@ -218,112 +219,74 @@ class TeamOverviewViewController: UIViewController {
         chartView.xAxis.valueFormatter = self
     }
     
-    func setupChartData() {
-        var datasets : [RadarChartDataSet] = []
+    func setupChartData(completion: @escaping (Error?) -> Void) {
+        if(team!.statistics!.gamesPlayed == 0) {
+            chartView.data = nil
+            completion(nil)
+        } else {
+            dbManager.getLeagueAverages { (leagueAverages, error) in
+                if let error = error {
+                    completion(error)
+                } else {
+                    var datasets : [RadarChartDataSet] = []
+                    
+                    var standardizedStats = self.team!.statistics!
+                    let teamDataArray = [standardizedStats.PTS.perGame, standardizedStats.FG.percentage*100, standardizedStats.FG3.percentage*100, standardizedStats.FG2.percentage*100, standardizedStats.FT.percentage*100, standardizedStats.AST.perGame, standardizedStats.TREB.perGame, standardizedStats.STL.perGame, standardizedStats.TO.perGame]
+                    
+                    standardizedStats = leagueAverages!
+                    let leagueDataArray = [standardizedStats.PTS.perGame, standardizedStats.FG.percentage*100, standardizedStats.FG3.percentage*100, standardizedStats.FG2.percentage*100, standardizedStats.FT.percentage*100, standardizedStats.AST.perGame, standardizedStats.TREB.perGame, standardizedStats.STL.perGame, standardizedStats.TO.perGame]
+                    
+                    var leagueEntries : [RadarChartDataEntry] = []
+                    for i in 0...leagueDataArray.count-1 {
+                        let entry = RadarChartDataEntry(value: 100.0)
+                        entry.data = [self.team!.abb, teamDataArray[i], leagueDataArray[i], i]
+                        leagueEntries.append(entry)
+                    }
+                    let leagueDataset = RadarChartDataSet(entries: leagueEntries, label: "League")
+                    self.setupDatasetOptions(dataset: leagueDataset, color: UIColor(hexString: self.team!.primaryColor), isLeagueDataset: true)
 
-        teamStats = [team!.teamTotalStats.avgPTS, team!.teamTotalStats.avgFGP*100, team!.teamTotalStats.avg3FGP*100, team!.teamTotalStats.avg2FGP*100, team!.teamTotalStats.avgFTP*100, team!.teamTotalStats.avgAST, team!.teamTotalStats.avgTREB, team!.teamTotalStats.avgSTL, team!.teamTotalStats.avgTO]
-        
-        let standardizedTeamStats = standardizeData(stats: teamStats)
-        var teamEntries : [RadarChartDataEntry] = []
-        for i in 0...standardizedTeamStats.count-1 {
-            let entry = RadarChartDataEntry(value: standardizedTeamStats[i])
-            entry.data = teamStats[i] as AnyObject
-            teamEntries.append(entry)
+                    var teamEntries : [RadarChartDataEntry] = []
+                    for i in 0...teamDataArray.count-1 {
+                        let entry = RadarChartDataEntry(value: teamDataArray[i] * 100 / leagueDataArray[i])
+                        entry.data = [self.team!.abb, teamDataArray[i], leagueDataArray[i], i]
+                        teamEntries.append(entry)
+                    }
+                    let teamDataset = RadarChartDataSet(entries: teamEntries, label: self.team!.abb)
+                    self.setupDatasetOptions(dataset: teamDataset, color: UIColor(hexString: self.team!.primaryColor), isLeagueDataset: false)
+                    
+                    datasets.append(teamDataset)
+                    datasets.append(leagueDataset)
+                    let data = RadarChartData(dataSets: datasets)
+                    self.chartView.yAxis.axisMaximum = data.yMax + 10
+                    self.chartView.data = data
+                    self.chartView.highlightValue(x: Double(0), dataSetIndex: 1)
+                    completion(nil)
+                }
+            }
         }
-        let teamDataset = RadarChartDataSet(entries: teamEntries, label: team!.abb)
-        setupDatasetOptions(dataset: teamDataset, color: UIColor(hexString: team!.primaryColor))
-        datasets.append(teamDataset)
-        
-        leagueStats = [87.3, 47.4, 42.2, 49.0, 65.5, 18.0, 28.0, 13.0, 19.0]
-        let standardizedLeagueStats = standardizeData(stats: leagueStats)
-        var leagueEntries : [RadarChartDataEntry] = []
-        for i in 0...standardizedLeagueStats.count-1 {
-            let entry = RadarChartDataEntry(value: standardizedLeagueStats[i])
-            entry.data = leagueStats[i] as AnyObject
-            leagueEntries.append(entry)
-        }
-        let leagueDataset = RadarChartDataSet(entries: leagueEntries, label: "League")
-        setupDatasetOptions(dataset: leagueDataset)
-        datasets.append(leagueDataset)
-        
-        let data = RadarChartData(dataSets: datasets)
-        chartView.yAxis.axisMaximum = data.yMax
-        chartView.data = data
     }
     
-    func setupDatasetOptions(dataset: RadarChartDataSet, color: UIColor = UIColor.flatOrange()) {
-        if(color == UIColor.flatOrange()) {
-            dataset.lineWidth = 1.5
+    func setupDatasetOptions(dataset: RadarChartDataSet, color: UIColor, isLeagueDataset: Bool) {
+        if(isLeagueDataset) {
+            dataset.lineWidth = 3
             dataset.drawValuesEnabled = false
             dataset.drawFilledEnabled = false
-            dataset.highlightEnabled = true
-            dataset.drawHighlightCircleEnabled = true
-            dataset.setDrawHighlightIndicators(false)
-
-            if(parentVC!.team!.teamID == "SHA") {
-                dataset.setColor(UIColor(complementaryFlatColorOf: color))
-            } else {
-                dataset.setColor(color)
-            }
+            dataset.setColor(UIColor(hexString: "2b2b2b"))
         } else {
-            dataset.lineWidth = 2
+            dataset.lineWidth = 2.5
             dataset.drawFilledEnabled = true
-            dataset.fillColor = color
-            dataset.fillAlpha = 0.3
             dataset.highlightEnabled = false
+            dataset.fillColor = color
+            dataset.fillAlpha = 0.4
             dataset.setColor(color)
         }
-        dataset.valueFont = .systemFont(ofSize: 10, weight: .light)
+        
+        dataset.drawHighlightCircleEnabled = true
+        dataset.setDrawHighlightIndicators(false)
+        dataset.valueFont = .systemFont(ofSize: 11, weight: .regular)
         dataset.valueTextColor = UIColor.white
         dataset.valueFormatter = self
     }
-    
-    func standardizeData(stats : [Double]) -> [Double] {
-        var result : [Double] = []
-        for i in 0...stats.count-1 {
-            switch i {
-            //PTS
-            case 0 :
-                if(stats[i] == 0) {
-                    result.append(stats[i])
-                } else {
-                    result.append(((stats[i] - 30.0) * 100) / (120.0 - 30.0))
-                }
-            //AST
-            case 5 :
-                if(stats[i] == 0) {
-                    result.append(stats[i])
-                } else {
-                    result.append(((stats[i] - 5.0) * 100) / (40.0 - 5.0))
-                }
-            //REB
-            case 6 :
-                if(stats[i] == 0) {
-                    result.append(stats[i])
-                } else {
-                    result.append(((stats[i] - 10.0) * 100) / (60.0 - 10.0))
-                }
-            //STL
-            case 7 :
-                if(stats[i] == 0) {
-                    result.append(stats[i])
-                } else {
-                    result.append(((stats[i] - 5.0) * 100) / (30.0 - 5.0))
-                }
-            //TO
-            case 8 :
-                if(stats[i] == 0) {
-                    result.append(stats[i])
-                } else {
-                    result.append(((stats[i] - 5.0) * 100) / (40.0 - 5.0))
-                }
-            default :
-                result.append(stats[i])
-            }
-        }
-        return result
-    }
-
 }
 
 // MARK: - Collection view data source and delegate methods
@@ -344,6 +307,7 @@ extension TeamOverviewViewController : UICollectionViewDataSource {
                 guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "StatsCell2", for: indexPath) as? StatsCollectionViewCell else {
                     return UICollectionViewCell()
                 }
+                
                 cell.titleLabel.text = ""
                 cell.backgroundColor = UIColor(hexString: "595959")
                 
@@ -355,9 +319,9 @@ extension TeamOverviewViewController : UICollectionViewDataSource {
                 }
                 
                 cell.playerImage.image = UIImage(named: "player")
-                if(playerDataArray.count > 0) {
-                    cell.firstName.text = playerDataArray[indexPath.section][indexPath.row]
-                    cell.lastName.text = playerDataArray[indexPath.section][indexPath.row + 1]
+                if(topPerformersData.count > 0) {
+                    cell.firstName.text = topPerformersData[indexPath.section][indexPath.row]
+                    cell.lastName.text = topPerformersData[indexPath.section][indexPath.row + 1]
                 }
                 cell.backgroundColor = UIColor(hexString: "484848")
 
@@ -368,8 +332,8 @@ extension TeamOverviewViewController : UICollectionViewDataSource {
                 guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "StatsCell2", for: indexPath) as? StatsCollectionViewCell else {
                     return UICollectionViewCell()
                 }
-                if(playerDataArray.count > 0) {
-                    cell.titleLabel.text = playerDataArray[indexPath.section][indexPath.row + 1]
+                if(topPerformersData.count > 0) {
+                    cell.titleLabel.text = topPerformersData[indexPath.section][indexPath.row]
                 }
                 cell.titleLabel.textColor = UIColor(hexString: "ffffff")
                 cell.backgroundColor = UIColor(hexString: "2b2b2b")
@@ -379,8 +343,8 @@ extension TeamOverviewViewController : UICollectionViewDataSource {
                 guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "StatsCell3", for: indexPath) as? StatsCollectionViewCell else {
                     return UICollectionViewCell()
                 }
-                if(playerDataArray.count > 0) {
-                    cell.titleLabel.text = playerDataArray[indexPath.section][indexPath.row + 1]
+                if(topPerformersData.count > 0) {
+                    cell.titleLabel.text = topPerformersData[indexPath.section][indexPath.row + 1]
                 }
                 cell.backgroundColor = UIColor(hexString: "2b2b2b", withAlpha: 0.5)
 
@@ -440,7 +404,15 @@ extension TeamOverviewViewController: IAxisValueFormatter {
 
 extension TeamOverviewViewController: IValueFormatter {
     func stringForValue(_ value: Double, entry: ChartDataEntry, dataSetIndex: Int, viewPortHandler: ViewPortHandler?) -> String {
-        return "\(String(format: "%.1f", entry.data as! Double))"
+        let index = dataSetIndex == 0 ? 1 : 2
+        
+        let data = entry.data as! [Any]
+        
+        if((data[3] as! Int) > 0 && (data[3] as! Int) < 5) {
+            return "\(String(format: "%.1f", data[index] as! Double))%"
+            } else {
+            return "\(String(format: "%.1f", data[index] as! Double))"
+        }
     }
     
     

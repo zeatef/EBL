@@ -20,19 +20,29 @@
                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                 <subviews>
                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Stat" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Wps-Jo-4KU">
-                        <rect key="frame" x="5" y="0.0" width="80" height="40"/>
+                        <rect key="frame" x="0.0" y="0.0" width="89.5" height="40"/>
                         <fontDescription key="fontDescription" type="boldSystem" pointSize="10"/>
-                        <color key="textColor" red="1" green="0.57810515169999999" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                        <color key="textColor" red="1" green="0.57647058823529407" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <nil key="highlightedColor"/>
                     </label>
+                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="suz-oD-GT3">
+                        <rect key="frame" x="89.5" y="0.0" width="0.5" height="40"/>
+                        <color key="backgroundColor" red="0.34901960780000002" green="0.34901960780000002" blue="0.34901960780000002" alpha="1" colorSpace="calibratedRGB"/>
+                        <constraints>
+                            <constraint firstAttribute="width" constant="0.29999999999999999" id="f1m-rI-fVv"/>
+                        </constraints>
+                    </view>
                 </subviews>
             </view>
             <color key="backgroundColor" red="0.1333333333" green="0.1333333333" blue="0.1333333333" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
             <constraints>
-                <constraint firstItem="Wps-Jo-4KU" firstAttribute="top" secondItem="gTV-IL-0wX" secondAttribute="top" id="4Wl-4d-zVa"/>
-                <constraint firstItem="Wps-Jo-4KU" firstAttribute="leading" secondItem="gTV-IL-0wX" secondAttribute="leading" constant="5" id="6UE-Gv-fCr"/>
-                <constraint firstAttribute="bottom" secondItem="Wps-Jo-4KU" secondAttribute="bottom" id="PXr-LB-Dzx"/>
-                <constraint firstAttribute="trailing" secondItem="Wps-Jo-4KU" secondAttribute="trailing" constant="5" id="x4b-1y-RCh"/>
+                <constraint firstItem="suz-oD-GT3" firstAttribute="leading" secondItem="Wps-Jo-4KU" secondAttribute="trailing" id="bD9-Wo-q1b"/>
+                <constraint firstAttribute="trailing" secondItem="suz-oD-GT3" secondAttribute="trailing" id="dAO-4J-Qot"/>
+                <constraint firstAttribute="bottom" secondItem="suz-oD-GT3" secondAttribute="bottom" id="f8c-W4-P01"/>
+                <constraint firstItem="suz-oD-GT3" firstAttribute="top" secondItem="gTV-IL-0wX" secondAttribute="top" id="ghN-6s-fkw"/>
+                <constraint firstAttribute="bottom" secondItem="Wps-Jo-4KU" secondAttribute="bottom" id="lSm-T2-dbC"/>
+                <constraint firstItem="Wps-Jo-4KU" firstAttribute="leading" secondItem="gTV-IL-0wX" secondAttribute="leading" id="n1M-Uo-Y5z"/>
+                <constraint firstItem="Wps-Jo-4KU" firstAttribute="top" secondItem="gTV-IL-0wX" secondAttribute="top" id="shT-Eu-hsq"/>
             </constraints>
             <viewLayoutGuide key="safeArea" id="ZTg-uK-7eu"/>
             <connections>

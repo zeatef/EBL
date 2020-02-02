@@ -16,6 +16,11 @@ class TeamDisplayData {
     var teamName : String
     var primaryColor : String
     var secondaryColor : String
+    var currentStanding : Int?
+    var previousStanding: Int?
+    var wins : Int?
+    var losses : Int?
+    var scoreDifference : Int?
     
     init(teamDocument : DocumentSnapshot) {
         teamID = teamDocument.documentID

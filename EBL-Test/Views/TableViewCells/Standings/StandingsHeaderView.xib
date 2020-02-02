@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="14490.70" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
+    <device id="retina6_1" orientation="portrait">
+        <adaptation id="fullscreen"/>
+    </device>
+    <dependencies>
+        <deployment identifier="iOS"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="14490.49"/>
+        <capability name="Safe area layout guides" minToolsVersion="9.0"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <objects>
+        <placeholder placeholderIdentifier="IBFilesOwner" id="-1" userLabel="File's Owner"/>
+        <placeholder placeholderIdentifier="IBFirstResponder" id="-2" customClass="UIResponder"/>
+        <view contentMode="scaleToFill" id="lav-vB-5vm" customClass="StandingsHeaderView" customModule="EBL_Test" customModuleProvider="target">
+            <rect key="frame" x="0.0" y="0.0" width="414" height="36"/>
+            <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+            <subviews>
+                <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="NTN-cF-vwB">
+                    <rect key="frame" x="0.0" y="0.0" width="414" height="36"/>
+                    <subviews>
+                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Group A" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="URo-OU-e0O">
+                            <rect key="frame" x="10" y="11" width="100" height="14.5"/>
+                            <constraints>
+                                <constraint firstAttribute="width" constant="100" id="rFP-49-XXO"/>
+                            </constraints>
+                            <fontDescription key="fontDescription" type="system" weight="semibold" pointSize="12"/>
+                            <color key="textColor" red="0.88235294119999996" green="0.88235294119999996" blue="0.88235294119999996" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
+                            <nil key="highlightedColor"/>
+                        </label>
+                        <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="VgB-yv-Jd0">
+                            <rect key="frame" x="373" y="0.0" width="36" height="36"/>
+                            <constraints>
+                                <constraint firstAttribute="width" secondItem="VgB-yv-Jd0" secondAttribute="height" multiplier="1:1" id="YBQ-JZ-pxN"/>
+                            </constraints>
+                            <inset key="imageEdgeInsets" minX="12" minY="12" maxX="12" maxY="12"/>
+                            <state key="normal" image="dropdown">
+                                <color key="titleColor" red="0.88235294119999996" green="0.88235294119999996" blue="0.88235294119999996" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
+                            </state>
+                            <connections>
+                                <action selector="expandButtonPressed:" destination="lav-vB-5vm" eventType="touchUpInside" id="RIT-34-IOF"/>
+                            </connections>
+                        </button>
+                    </subviews>
+                    <color key="backgroundColor" red="0.16862745100000001" green="0.16862745100000001" blue="0.16862745100000001" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                    <constraints>
+                        <constraint firstItem="URo-OU-e0O" firstAttribute="centerY" secondItem="NTN-cF-vwB" secondAttribute="centerY" id="OFW-BO-4x2"/>
+                        <constraint firstItem="URo-OU-e0O" firstAttribute="leading" secondItem="NTN-cF-vwB" secondAttribute="leading" constant="10" id="QAB-oW-oqK"/>
+                        <constraint firstAttribute="bottom" secondItem="VgB-yv-Jd0" secondAttribute="bottom" id="lJz-pz-zpN"/>
+                        <constraint firstAttribute="trailing" secondItem="VgB-yv-Jd0" secondAttribute="trailing" constant="5" id="wqD-AC-ZdA"/>
+                        <constraint firstItem="VgB-yv-Jd0" firstAttribute="top" secondItem="NTN-cF-vwB" secondAttribute="top" id="yNS-tf-eiX"/>
+                    </constraints>
+                </view>
+            </subviews>
+            <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+            <constraints>
+                <constraint firstAttribute="bottom" secondItem="NTN-cF-vwB" secondAttribute="bottom" id="5Qf-Fb-eBT"/>
+                <constraint firstItem="NTN-cF-vwB" firstAttribute="leading" secondItem="E6v-6V-uRL" secondAttribute="leading" id="TOi-8W-GR7"/>
+                <constraint firstItem="E6v-6V-uRL" firstAttribute="trailing" secondItem="NTN-cF-vwB" secondAttribute="trailing" id="ZWJ-jK-OjJ"/>
+                <constraint firstItem="NTN-cF-vwB" firstAttribute="top" secondItem="lav-vB-5vm" secondAttribute="top" id="irs-uS-Q1r"/>
+            </constraints>
+            <nil key="simulatedTopBarMetrics"/>
+            <nil key="simulatedBottomBarMetrics"/>
+            <freeformSimulatedSizeMetrics key="simulatedDestinationMetrics"/>
+            <viewLayoutGuide key="safeArea" id="E6v-6V-uRL"/>
+            <connections>
+                <outlet property="label" destination="URo-OU-e0O" id="UnC-Vx-xoH"/>
+            </connections>
+            <point key="canvasLocation" x="24.637681159420293" y="-9.375"/>
+        </view>
+    </objects>
+    <resources>
+        <image name="dropdown" width="100" height="100"/>
+    </resources>
+</document>

@@ -28,7 +28,7 @@ class TeamGraphsViewController: UIViewController {
     
     //MARK: - Instance Variables
     let dbManager = DatabaseManager.sharedInstance
-    var team : TeamDisplayData?
+    var team : Team?
 
     var opponents : [String] = []
     var chartManager : TeamChartManager?
@@ -63,22 +63,22 @@ class TeamGraphsViewController: UIViewController {
     
     //MARK: - Setup Instance Variables
     func setupOpponents() {
-        opponents = dbManager.teamsDisplayData.map { $0.teamID }
-        opponents.removeAll(where: {$0 == team!.teamID})
+        opponents = dbManager.teamsDisplayData.values.map { $0.teamID }
+        opponents.removeAll(where: {$0 == team!.abb})
         opponents.insert("League", at: 0)
         opponents.append("League")
         opponents.append("League")
     }
     
     func getAllTeamGames(completion: @escaping  (Error?) -> Void) {
-        dbManager.getTeamGameStats(forTeamRef: (parent as! TeamsViewController).team!.teamRef) { (error, hasData, games) in
+        let team = (parent as! TeamsViewController).team!
+
+        dbManager.getTeamGameStats(forTeam: team) { (error) in
             if let error = error {
                 print(error)
                 completion(error)
             } else {
-                if hasData! {
-                    self.chartManager!.allGames = games!
-                }
+                self.chartManager!.allGames = team.gameStatistics!
                 completion(nil)
             }
         }

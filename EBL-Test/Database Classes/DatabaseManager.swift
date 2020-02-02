@@ -15,10 +15,8 @@ class DatabaseManager {
     let database : Firestore
     let storage : Storage
     
-    let teamImagesPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Images")
-    
     let currentSeason = "18-19"
-    var teamsDisplayData : [TeamDisplayData] = [TeamDisplayData]()
+    var teamsDisplayData : [String:TeamDisplayData] = [:]
     
     init() {
         //Initialize Firebase
@@ -29,9 +27,10 @@ class DatabaseManager {
         storage = Storage.storage()
     }
     
+    //TODO: - Delete This Function
     func setupApplicationDatabase(completion: @escaping  (Error?, String?) -> Void){
         let start = DispatchTime.now()
-        createPlistFiles { (error) in
+        createTeamImagesPlist { (error) in
             if let error = error {
                 completion(error, "Code 1")
             } else {
@@ -48,7 +47,9 @@ class DatabaseManager {
                             if let error = error {
                                 completion(error, "Code 3")
                             } else {
-                                DatabaseManager.sharedInstance.teamsDisplayData = teams!
+                                for team in teams! {
+                                    DatabaseManager.sharedInstance.teamsDisplayData[team.teamID] = team
+                                }
                                 print("Done with step 3")
                                 let end = DispatchTime.now()
                                 let difference = end.uptimeNanoseconds - start.uptimeNanoseconds
@@ -62,2489 +63,810 @@ class DatabaseManager {
         }
     }
     
-    func AddTeamToDatabase(completion: @escaping  (Error?) -> Void) {
-        print("Adding data to database")
-        var documentsToWrite = 0
-        var completedDocuments = 0
-        
-        let teamData : [String : Any] = [
-            "teamName" : "Horse Owners Club",
-            "abb" : "HOC",
-            "location" : "Alexandria, Egypt",
-            "image" : "",
-            "headCoach" : ["Wessam Gaber"],
-            "leagueStanding" : 9
-        ]
-        
-        documentsToWrite += 1
-        database.collection("Teams").document(teamData["abb"] as! String).setData(teamData) { error in
+    //MARK:- Application Start Functions
+    func setupApplication(completion: @escaping (Error?) -> Void) {
+        fetchUpToDateData { (error) in
             if let error = error {
-                print("Error writing document: \(error)")
                 completion(error)
-                return
             } else {
-                completedDocuments += 1
-                print("Document successfully written!")
+                print("1/3: Cache Data Up To Date!")
+                self.fetchTeamImagesURLs(completion: { (error) in
+                    if let error = error {
+                        completion(error)
+                    } else {
+                        print("2/3: Team Images URLs Updated!")
+                        completion(nil)
+                    }
+                })
             }
         }
-        
-        let teamDocumentID = "Teams/\(teamData["abb"] as! String)"
-        
-        let teamStatsData : [String : Any] = [
-            "gamesPlayed" : 1,
-            "3FGA" : 18,
-            "3FGM" : 8,
-            "3FG%" : 0.44,
-            "2FGA" : 43,
-            "2FGM" : 21,
-            "2FG%" : 0.49,
-            "FGA" : 61,
-            "FGM" : 29,
-            "FG%" : 0.48,
-            "FTA" : 23,
-            "FTM" : 13,
-            "FT%" : 0.57,
-            "PTS" : 79,
-            "ORB" : 10,
-            "DRB" : 21,
-            "TREB" : 31,
-            "AST" : 20,
-            "BLK" : 1,
-            "TO" : 14,
-            "STL" : 9,
-            "FOL" : 20
-        ]
-        
-        documentsToWrite += 1
-        database.collection("\(teamDocumentID)/TeamStats").document("\(currentSeason)").setData(teamStatsData) { error in
+    }
+
+    //MARK: Up To Date Team Images
+    func fetchTeamImagesURLs(completion: @escaping (Error?) -> Void) {
+        createTeamImagesPlist { (error) in
             if let error = error {
-                print("Error writing document: \(error)")
                 completion(error)
-                return
             } else {
-                completedDocuments += 1
-                print("Document successfully written!")
+                self.downloadTeamImageURLsToLocal(completion: { (error) in
+                    if let error = error {
+                        completion(error)
+                    } else {
+                        completion(nil)
+                    }
+                })
             }
         }
+    }
+    
+    func createTeamImagesPlist(completion: @escaping (Error?) -> Void) {
+        let teamImagesPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Images")
+
+        do {
+            try FileManager.default.createDirectory(at: teamImagesPath!, withIntermediateDirectories: true, attributes: nil)
+        } catch let error {
+            print("Error Creating Directory, \(error)")
+            completion(error)
+        }
         
-        let teamStatsDocumentID = "\(teamDocumentID)/TeamStats/\(currentSeason)"
+        let path = teamImagesPath!.appendingPathComponent("TeamImages.plist")
         
-        for i in 1...14 {
-            let zoneData : [String : Any] = [
-                "zoneNumber" : i,
-                "FGA" : 0,
-                "FGM" : 0,
-                "FG%" : 0.0,
-                "PTS" : 0
-            ]
-            
-            let zoneName = "Zone-\(i)"
-            documentsToWrite += 1
-            database.collection("\(teamStatsDocumentID)/StatsPerZone").document(zoneName).setData(zoneData) { error in
-                if let error = error {
-                    print("Error writing document: \(error)")
-                    completion(error)
-                    return
-                } else {
-                    completedDocuments += 1
-                    print("Document successfully written!")
+        if(!FileManager.default.fileExists(atPath: path.path)){
+            let data : [String: URL] = [:]
+            let dictionary = NSMutableDictionary(dictionary: data)
+            dictionary.write(toFile: path.path, atomically: true)
+        }
+        completion(nil)
+    }
+
+    func downloadTeamImageURLsToLocal(completion: @escaping (Error?) -> Void) {
+        let teamImagesPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Images")
+        
+        let path = teamImagesPath!.appendingPathComponent("TeamImages.plist")
+        let dictionary = NSMutableDictionary(contentsOfFile: path.path)!
+        
+        let teamsRef = database.collection("/Teams")
+        teamsRef.getDocuments(source: .cache) { (cacheSnapshot, error) in
+            if let error = error {
+                print("Error getting teams refrences at downloadTeamImageURLsToLocal")
+                completion(error)
+            } else {
+                var count = 0
+                for document in cacheSnapshot!.documents {
+                    if dictionary[document.documentID] == nil {
+                        let imageRef = self.storage.reference().child("TeamImages/\(document.documentID).png")
+                        imageRef.downloadURL { url, error in
+                            if let error = error {
+                                count += 1
+                                print(error)
+                                if(count == cacheSnapshot!.count) {
+                                    dictionary.write(toFile: path.path, atomically: true)
+                                    completion(nil)
+                                }
+                            } else {
+                                dictionary.setValue(url!.absoluteString, forKey: document.documentID)
+                                count += 1
+                                if(count == cacheSnapshot!.count) {
+                                    dictionary.write(toFile: path.path, atomically: true)
+                                    completion(nil)
+                                }
+                            }
+                        }
+                    } else {
+                        count += 1
+                        if(count == cacheSnapshot!.count) {
+                            completion(nil)
+                        }
+                    }
                 }
             }
         }
-        
-        let teamGameStatsID = "\(teamDocumentID)/TeamGameStats"
+    }
 
-        let gameStatsData : [String : Any] = [
-            "gameID" : "HOCvsSUNS_27-2-2019",
-            "opponentName" : "Shams",
-            "opponentABB" : "SHA",
-            "3FGA" : 18,
-            "3FGM" : 8,
-            "3FG%" : 0.44,
-            "2FGA" : 43,
-            "2FGM" : 21,
-            "2FG%" : 0.49,
-            "FGA" : 61,
-            "FGM" : 29,
-            "FG%" : 0.48,
-            "FTA" : 23,
-            "FTM" : 13,
-            "FT%" : 0.57,
-            "PTS" : 79,
-            "ORB" : 10,
-            "DRB" : 21,
-            "TREB" : 31,
-            "AST" : 20,
-            "BLK" : 1,
-            "TO" : 14,
-            "STL" : 9,
-            "FOL" : 20
-        ]
+    func emptyTeamImagesDirectory(){
+        let teamImagesPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Images")
         
-        documentsToWrite += 1
-        database.collection(teamGameStatsID).document(gameStatsData["gameID"] as! String).setData(gameStatsData) { error in
+        do {
+            try FileManager.default.removeItem(at: teamImagesPath!)
+        }
+        catch let error {
+            print("Zodiac \(error)")
+        }
+    }
+    
+    //MARK: Up To Date Cache
+    
+    func fetchUpToDateData(completion: @escaping (Error?) -> Void) {
+        print(NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true).last! as String)
+        if let cacheResult = UserDefaults.standard.object(forKey: "UpdateStatus") as? [String:Date] {
+            var updatedCache = cacheResult
+            getLastUpdateFromServer { (serverResult, error) in
+                if let error = error {
+                    print("Error: Could Not Get Last Update From Server")
+                    completion(error)
+                } else {
+                    var count = 0
+                    for serverValue in serverResult! {
+                        if let cacheValue = cacheResult[serverValue.key] {
+                            if(serverValue.value > cacheValue) {
+                                print("\(serverValue.key): Not Up To Date")
+                                self.syncServerWithCache(forCollection: serverValue.key, completion: { (error) in
+                                    if let error = error {
+                                        print("Error: \(serverValue.key) NOT UPDATED! \n\(error)")
+                                        if(self.fetchUpToDateHelper(count: count, total: serverResult!.count, updatedCache: updatedCache)) {
+                                            completion(nil)
+                                        } else {
+                                            count += 1
+                                        }
+                                    } else {
+                                        updatedCache[serverValue.key] = Date()
+                                        if(self.fetchUpToDateHelper(count: count, total: serverResult!.count, updatedCache: updatedCache)) {
+                                            completion(nil)
+                                        } else {
+                                            count += 1
+                                        }
+                                    }
+                                })
+                            }
+                            else {
+                                print("\(serverValue.key): Up To Date")
+                                if(self.fetchUpToDateHelper(count: count, total: serverResult!.count, updatedCache: updatedCache)) {
+                                    completion(nil)
+                                } else {
+                                    count += 1
+                                }
+                            }
+                        }
+                        else {
+                            print("\(serverValue.key): Not Up To Date (Not Synced Before)")
+                            self.syncServerWithCache(forCollection: serverValue.key, completion: { (error) in
+                                if let error = error {
+                                    print("Error: \(serverValue.key) NOT SYNCED! \n\(error)")
+                                    if(self.fetchUpToDateHelper(count: count, total: serverResult!.count, updatedCache: updatedCache)) {
+                                        completion(nil)
+                                    } else {
+                                        count += 1
+                                    }
+                                } else {
+                                    updatedCache[serverValue.key] = Date()
+                                    if(self.fetchUpToDateHelper(count: count, total: serverResult!.count, updatedCache: updatedCache)) {
+                                        completion(nil)
+                                    } else {
+                                        count += 1
+                                    }
+                                }
+                            })
+                        }
+                    }
+                }
+            }
+        } else {
+            print("Cache Not Synced Before")
+            var updatedCache : [String:Date] = [:]
+            var count = 0
+            getLastUpdateFromServer { (serverResult, error) in
+                if let error = error {
+                    print("Error: Could Not Get Last Update From Server")
+                    completion(error)
+                } else {
+                    for serverValue in serverResult! {
+                        print("\(serverValue.key): Syncing First Time")
+                        self.syncServerWithCache(forCollection: serverValue.key, completion: { (error) in
+                            if let error = error {
+                                print("Error: \(serverValue.key) NOT UPDATED! \n\(error)")
+                                if(self.fetchUpToDateHelper(count: count, total: serverResult!.count, updatedCache: updatedCache)) {
+                                    completion(nil)
+                                } else {
+                                    count += 1
+                                }
+                            } else {
+                                updatedCache[serverValue.key] = Date()
+                                if(self.fetchUpToDateHelper(count: count, total: serverResult!.count, updatedCache: updatedCache)) {
+                                    completion(nil)
+                                } else {
+                                    count += 1
+                                }
+                            }
+                        })
+                    }
+                }
+            }
+        }
+    }
+    
+    func fetchUpToDateHelper(count: Int, total: Int, updatedCache : [String:Date]) -> Bool {
+        if(count+1 == total) {
+            UserDefaults.standard.set(updatedCache, forKey: "UpdateStatus")
+            return true
+        } else {
+            return false
+        }
+    }
+    
+    func syncServerWithCache(forCollection key: String, completion: @escaping (Error?) -> Void) {
+        if(key == "Standings") {
+            self.fetchCurrentAndPreviousStandings(completion: { (error) in
+                if let error = error {
+                    completion(error)
+                } else {
+                    completion(nil)
+                }
+            })
+        } else {
+            self.database.collectionGroup(key).getDocuments(completion: { (snapshot, error) in
+                if let error = error {
+                    completion(error)
+                } else {
+                    completion(nil)
+                }
+            })
+        }
+    }
+    
+    func fetchCurrentAndPreviousStandings(completion: @escaping (Error?) -> Void) {
+        let currentQuery = database.collection("Standings")
+            .whereField("season", isEqualTo: currentSeason)
+            .whereField("isCurrentStage", isEqualTo: true)
+            .limit(to: 1)
+        
+        currentQuery.getDocuments{ (snapshot, error) in
             if let error = error {
-                print("Error writing document: \(error)")
                 completion(error)
-                return
             } else {
-                completedDocuments += 1
-                print("Document successfully written!")
+                let stage = snapshot!.documents[0]
+                if(stage.get("isGroup") as! Bool) {
+                    stage.reference.collection("TeamsTable").getDocuments(completion: { (teams, error) in
+                        if let error = error {
+                            completion(error)
+                        } else {
+                            completion(nil)
+                        }
+                    })
+                }
+            }
+        }
+        let previousQuery = database.collection("Standings")
+            .whereField("season", isEqualTo: currentSeason)
+            .whereField("isPreviousStage", isEqualTo: true)
+            .limit(to: 1)
+        
+        
+        previousQuery.getDocuments{ (snapshot, error) in
+            if let error = error {
+                completion(error)
+            } else {
+                if(snapshot!.count > 0) {
+                    let stage = snapshot!.documents[0]
+                    if(stage.get("isGroup") as! Bool) {
+                        stage.reference.collection("TeamsTable").getDocuments(completion: { (teams, error) in
+                            if let error = error {
+                                completion(error)
+                            } else {
+                                completion(nil)
+                            }
+                        })
+                    }
+                }
+            }
+        }
+    }
+    
+    func getLastUpdateFromServer(completion: @escaping ([String:Date]?, Error?) -> Void) {
+        var result : [String:Date] = [:]
+        var count = 0
+        database.collection("UpdateStatus").getDocuments { (snapshot, error) in
+            if let error = error {
+                completion(nil, error)
+            } else {
+                for document in snapshot!.documents {
+                    result[document.documentID] = (document.get("lastUpdated") as! Timestamp).dateValue()
+                    count += 1
+                    
+                    if(count == snapshot!.count) {
+                        completion(result, nil)
+                    }
+                }
+            }
+        }
+    }
+    
+    //MARK:- Teams Functions
+    func getAllTeams(source: FirestoreSource, completion: @escaping ([Team]?, Error?) -> Void) {
+        let query = database.collection("Teams").order(by: "teamName")
+        query.getDocuments(source: source) { (snapshot, error) in
+            if let error = error {
+                completion(nil, error)
+            } else {
+                var result : [Team] = []
+                for team in snapshot!.documents {
+                    result.append(Team(teamDocument: team))
+                }
+                completion(result, nil)
+            }
+        }
+    }
+    
+    func getTeam(teamID: String, source: FirestoreSource, completion: @escaping (Team?, Error?) -> Void) {
+        database.collection("Teams").document(teamID).getDocument(source: source) { (snapshot, error) in
+            if let error = error {
+                completion(nil, error)
+            } else {
+                let result = Team(teamDocument: snapshot!)
+                self.database.collection("Teams/\(teamID)/TeamStats").document(self.currentSeason).getDocument(source: source, completion: { (stats, error) in
+                    if let error = error {
+                        completion(nil, error)
+                    } else {
+                        result.setAverageStatistics(statsDocument: stats!)
+                        completion(result, nil)
+                    }
+                })
+            }
+        }
+    }
+
+    func getTeamStats(forTeam team: Team, source: FirestoreSource, completion: @escaping (Error?) -> Void) {
+        database.collection("Teams/\(team.abb)/TeamStats").document(currentSeason).getDocument(source: source) { (snapshot, error) in
+            if let error = error {
+                completion(error)
+            } else {
+                team.setAverageStatistics(statsDocument: snapshot!)
+                completion(nil)
+            }
+        }
+    }
+    
+    func getTeamGameStats(forTeam team: Team, completion: @escaping (Error?) -> Void) {
+        database.collection("Teams/\(team.abb)/TeamGameStats").getDocuments { (teamGamesSnapshot, error) in
+            if let error = error {
+                completion(error)
+            } else {
+                team.setGameStatistics(gamesDocument: teamGamesSnapshot!.documents)
+                completion(nil)
+            }
+        }
+    }
+    
+    func getLeagueAverages(completion: @escaping (AverageStatistics?, Error?) -> Void) {
+        var result = AverageStatistics(
+            gamesPlayed: 0, wins: 0, losses: 0,
+            FG2: PercentageStatistic(attempts: 0, made: 0, percentage: 0),
+            FG3: PercentageStatistic(attempts: 0, made: 0, percentage: 0),
+            FG: PercentageStatistic(attempts: 0, made: 0, percentage: 0),
+            FT: PercentageStatistic(attempts: 0, made: 0, percentage: 0),
+            PTS: TotalandPerGameStatistic(total: 0, perGame: 0),
+            AST: TotalandPerGameStatistic(total: 0, perGame: 0),
+            DREB: TotalandPerGameStatistic(total: 0, perGame: 0),
+            OREB: TotalandPerGameStatistic(total: 0, perGame: 0),
+            TREB: TotalandPerGameStatistic(total: 0, perGame: 0),
+            STL: TotalandPerGameStatistic(total: 0, perGame: 0),
+            TO: TotalandPerGameStatistic(total: 0, perGame: 0),
+            BLK: TotalandPerGameStatistic(total: 0, perGame: 0),
+            FOL: TotalandPerGameStatistic(total: 0, perGame: 0),
+            EFF: nil, MINS: nil)
+        
+        database.collectionGroup("TeamStats").whereField("season", isEqualTo: currentSeason).getDocuments(source: .cache) { (snapshot, error) in
+            if let error = error {
+                completion(nil, error)
+            } else {
+                for document in snapshot!.documents {
+                    result.gamesPlayed += document.get("gamesPlayed") as! Int
+                    result.FG2.attempts = result.FG2.attempts + (document.get("2FG.attempts") as! Int)
+                    result.FG2.made = result.FG2.made + (document.get("2FG.made") as! Int)
+                    
+                    result.FG3.attempts = result.FG3.attempts + (document.get("3FG.attempts") as! Int)
+                    result.FG3.made = result.FG3.made + (document.get("3FG.made") as! Int)
+
+                    result.FT.attempts = result.FT.attempts + (document.get("FT.attempts") as! Int)
+                    result.FT.made = result.FT.made + (document.get("FT.made") as! Int)
+                    
+                    result.PTS.total = result.PTS.total + (document.get("PTS.total") as! Double)
+                    result.AST.total = result.AST.total + (document.get("AST.total") as! Double)
+                    result.TREB.total = result.TREB.total + (document.get("REB.total") as! Double)
+                    result.STL.total = result.STL.total + (document.get("STL.total") as! Double)
+                    result.TO.total = result.TO.total + (document.get("TO.total") as! Double)
+                }
                 
+                result.FG2.percentage = Double(result.FG2.made) / Double(result.FG2.attempts)
+                result.FG3.percentage = Double(result.FG3.made) / Double(result.FG3.attempts)
+                
+                result.FG.made = result.FG2.made + result.FG3.made
+                result.FG.attempts = result.FG2.attempts + result.FG3.attempts
+                result.FG.percentage = Double(result.FG.made) / Double(result.FG.attempts)
+                
+                result.FT.percentage = Double(result.FT.made) / Double(result.FT.attempts)
+                
+                result.PTS.perGame = result.PTS.total / Double(result.gamesPlayed)
+                result.AST.perGame = result.AST.total / Double(result.gamesPlayed)
+                result.TREB.perGame = result.TREB.total / Double(result.gamesPlayed)
+                result.STL.perGame = result.STL.total / Double(result.gamesPlayed)
+                result.TO.perGame = result.TO.total / Double(result.gamesPlayed)
+                
+                completion(result, nil)
             }
         }
+    }
+    
+    func getTeamLeagueLeaders(source: FirestoreSource, statistic: String, completion: @escaping (Error?,[Team]?) -> Void) {
+        let query = database.collectionGroup("TeamStats")
+            .order(by: statistic, descending: true)
+            .limit(to: 10)
         
-        let gameStatsDocumentID = "\(teamGameStatsID)/\(gameStatsData["gameID"] as! String)"
-        
-        for i in 1...14 {
-            let zoneData : [String : Any] = [
-                "zoneNumber" : i,
-                "FGA" : 0,
-                "FGM" : 0,
-                "FG%" : 0.0,
-                "PTS" : 0
-            ]
-            
-            let zoneName = "Zone-\(i)"
-            
-            documentsToWrite += 1
-            database.collection("\(gameStatsDocumentID)/StatsPerZone").document(zoneName).setData(zoneData) { error in
-                if let error = error {
-                    print("Error writing document: \(error)")
-                    completion(error)
-                    return
-                } else {
-                    completedDocuments += 1
-                    print("Document successfully written!")
+        var count = 0
+        query.getDocuments(source: source) { (stats, error) in
+            if let error = error {
+                completion(error, nil)
+            } else {
+                var result : [Team] = []
+                for stat in stats!.documents {
+                    stat.reference.parent.parent!.getDocument(source: source, completion: { (teamDocument, error) in
+                        if let error = error {
+                            completion(error, nil)
+                        } else {
+                            let team = Team(teamDocument: teamDocument!)
+                            team.setAverageStatistics(statsDocument: stat)
+                            result.append(team)
+                            count += 1
+                            if(count == 10) {
+                                completion(nil, result)
+                            }
+                        }
+                    })
                 }
             }
         }
+    }
+    
+    //MARK:- Players Functions
+    func getAllPlayersInfo(source: FirestoreSource, completion: @escaping ([Player]?, Error?) -> Void) {
+        var count = 0
+        let query = database.collection("Players")
+            .order(by: "name.first")
+            .order(by: "name.last")
         
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "dd/MM/yyyy"
-        
-        var playerData : [String : Any] = [
-            "firstName" : "Ahmed",
-            "lastName" : "Khaled",
-            "nickname" : "Ahmed Khaled",
-            "primaryPosition" : 1,
-            "secondaryPosition" : 0,
-            "jerseyNo" : "7",
-            "height" : 180,
-            "weight" : 78,
-            "dateOfBirth" : Timestamp(date: dateFormatter.date(from: "1/1/1996")!),
-            "nationality" : "Egyptian",
-            "hometown" : "Alexandria, Egypt",
-            "avatar": ""
-        ]
-        
-        var playersDocumentID = "\(teamDocumentID)/Players"
+        query.getDocuments(source: source) { (snapshot, error) in
+            if let error = error {
+                completion(nil, error)
+            } else {
+                var result : [Player] = []
+                for document in snapshot!.documents {
+                    result.append(Player(playerDocument: document))
+                    count += 1
+                    if(count == snapshot!.count) {
+                        completion(result, nil)
+                    }
+                }
+            }
+        }
+    }
 
-        documentsToWrite += 1
-        var playerRef : DocumentReference? = nil
-        playerRef = database.collection(playersDocumentID).addDocument(data: playerData) { (error) in
+    
+    func getAllPlayers(forTeam teamID: String, source: FirestoreSource, completion: @escaping ([Player]?, Error?) -> Void) {
+        
+        let query = database.collection("Players")
+            .whereField("currentTeam", isEqualTo: teamID)
+        
+        var count = 0
+        query.getDocuments(source: source) { (snapshot, error) in
             if let error = error {
-                print("Error writing document: \(error)")
-                completion(error)
-                return
+                completion(nil, error)
             } else {
-                completedDocuments += 1
-                print("Document successfully written!")
-            }
-        }
-        
-        var playerStatsDocumentID = "\(playersDocumentID)/\(playerRef!.documentID)/PlayerStats"
-        
-        var playerStatsData : [String : Any] = [
-            "gamesPlayed" : 1,
-            "3FGA" : 2,
-            "3FGM" : 1,
-            "3FG%" : 0.5,
-            "2FGA" : 5,
-            "2FGM" : 3,
-            "2FG%" : 0.6,
-            "FGA" : 7,
-            "FGM" : 4,
-            "FG%" : 0.57,
-            "FTA" : 1,
-            "FTM" : 0,
-            "FT%" : 0.0,
-            "PTS" : 9,
-            "ORB" : 0,
-            "DRB" : 1,
-            "TREB" : 1,
-            "AST" : 5,
-            "BLK" : 0,
-            "TO" : 3,
-            "STL" : 5,
-            "FOL" : 1,
-            "MINS" : 26.03,
-            "EFF" : 12
-        ]
-        
-        documentsToWrite += 1
-        database.collection(playerStatsDocumentID).document(currentSeason).setData(playerStatsData) { (error) in
-            if let error = error {
-                print("Error writing document: \(error)")
-                completion(error)
-                return
-            } else {
-                completedDocuments += 1
-                print("Document successfully written!")
-            }
-        }
-        
-        for i in 1...14 {
-            let zoneData : [String : Any] = [
-                "zoneNumber" : i,
-                "FGA" : 0,
-                "FGM" : 0,
-                "FG%" : 0.0,
-                "PTS" : 0
-            ]
-            
-            let zoneName = "Zone-\(i)"
-            documentsToWrite += 1
-            database.collection("\(playerStatsDocumentID)/\(currentSeason)/StatsPerZone").document(zoneName).setData(zoneData) { error in
-                if let error = error {
-                    print("Error writing document: \(error)")
-                    completion(error)
-                    return
-                } else {
-                    completedDocuments += 1
-                    print("Document successfully written!")
+                var result : [Player] = []
+                for document in snapshot!.documents {
+                    let player = Player(playerDocument: document)
+                    self.database.collection("Players/\(document.documentID)/PlayerStats").document(self.currentSeason).getDocument(source: source, completion: { (stats, error) in
+                        if let error = error {
+                            completion(nil, error)
+                        } else {
+                            player.setPlayerStatistics(statsDocument: stats!)
+                            result.append(player)
+                            count += 1
+                            if(count == snapshot!.count) {
+                                completion(result, nil)
+                            }
+                        }
+                    })
                 }
             }
         }
+    }
+    
+    func getPlayerLeagueLeaders(source: FirestoreSource, statistic: String, completion: @escaping (Error?,[Player]?) -> Void) {
         
-        var playerGameStatsDocumentID = "\(playersDocumentID)/\(playerRef!.documentID)/PlayerGameStats"
+        let query = database.collectionGroup("PlayerStats")
+            .order(by: statistic, descending: true)
         
-        var playerGameStatsData : [String : Any] = [
-            "gameID" : "HOCvsSUNS_27-2-2019",
-            "opponentName" : "Shams",
-            "3FGA" : 2,
-            "3FGM" : 1,
-            "3FG%" : 0.5,
-            "2FGA" : 5,
-            "2FGM" : 3,
-            "2FG%" : 0.6,
-            "FGA" : 7,
-            "FGM" : 4,
-            "FG%" : 0.57,
-            "FTA" : 1,
-            "FTM" : 0,
-            "FT%" : 0.0,
-            "PTS" : 9,
-            "ORB" : 0,
-            "DRB" : 1,
-            "TREB" : 1,
-            "AST" : 5,
-            "BLK" : 0,
-            "TO" : 3,
-            "STL" : 5,
-            "FOL" : 1,
-            "MINS" : 26.03,
-            "EFF" : 12
-        ]
-        
-        documentsToWrite += 1
-        database.collection(playerGameStatsDocumentID).document(playerGameStatsData["gameID"] as! String).setData(playerStatsData) { (error) in
+        var count = 0
+        query.getDocuments(source: source) { (stats, error) in
             if let error = error {
-                print("Error writing document: \(error)")
-                completion(error)
-                return
+                completion(error, nil)
             } else {
-                completedDocuments += 1
-                print("Document successfully written!")
-            }
-        }
-        
-        for i in 1...14 {
-            let zoneData : [String : Any] = [
-                "zoneNumber" : i,
-                "FGA" : 0,
-                "FGM" : 0,
-                "FG%" : 0.0,
-                "PTS" : 0
-            ]
-            
-            let zoneName = "Zone-\(i)"
-            documentsToWrite += 1
-            let playerZoneID = "\(playerGameStatsDocumentID)/\(playerGameStatsData["gameID"] as! String)/StatsPerZone"
-            database.collection(playerZoneID).document(zoneName).setData(zoneData) { error in
-                if let error = error {
-                    print("Error writing document: \(error)")
-                    completion(error)
-                    return
-                } else {
-                    completedDocuments += 1
-                    print("Document successfully written!")
+                var result : [Player] = []
+                for stat in stats!.documents {
+                    stat.reference.parent.parent!.getDocument(source: source, completion: { (playerDocument, error) in
+                        if let error = error {
+                            completion(error, nil)
+                        } else {
+                            switch statistic {
+                            case "FG.percentage":
+                                let fgm = stat.get("FG.made") as! Int
+                                let games = stat.get("teamGamesPlayed") as! Int
+                                let minimum = self.getStatisticalMinimumFGMade(games: games)
+                                if(fgm >= minimum) {
+                                    let player = Player(playerDocument: playerDocument!)
+                                    player.setPlayerStatistics(statsDocument: stat)
+                                    result.append(player)
+                                    count += 1
+                                    if(count == 10) {
+                                        completion(nil, result)
+                                    }
+                                }
+                            case "FT.percentage":
+                                let ftm = stat.get("FT.made") as! Int
+                                let games = stat.get("teamGamesPlayed") as! Int
+                                let minimum = self.getStatisticalMinimumFTMade(games: games)
+                                if(ftm >= minimum) {
+                                    let player = Player(playerDocument: playerDocument!)
+                                    player.setPlayerStatistics(statsDocument: stat)
+                                    result.append(player)
+                                    count += 1
+                                    if(count == 10) {
+                                        completion(nil, result)
+                                    }
+                                }
+                            case "3FG.percentage":
+                                let fgm = stat.get("3FG.made") as! Int
+                                let games = stat.get("teamGamesPlayed") as! Int
+                                if(fgm >= games) {
+                                    let player = Player(playerDocument: playerDocument!)
+                                    player.setPlayerStatistics(statsDocument: stat)
+                                    result.append(player)
+                                    count += 1
+                                    if(count == 10) {
+                                        completion(nil, result)
+                                    }
+                                }
+                            default:
+                                let playerGames = stat.get("gamesPlayed") as! Int
+                                let teamGames = stat.get("teamGamesPlayed") as! Int
+                                let minimumGames = self.getStatisticalMinimumGames(games: teamGames)
+                                
+                                if(playerGames >= minimumGames && minimumGames != 0) {
+                                    let player = Player(playerDocument: playerDocument!)
+                                    player.setPlayerStatistics(statsDocument: stat)
+                                    result.append(player)
+                                    count += 1
+                                    if(count == 10) {
+                                        completion(nil, result)
+                                    }
+                                }
+                            }
+                        }
+                    })
                 }
             }
         }
-        
-        playerData = [
-            "firstName" : "Mostafa",
-            "lastName" : "Sameh",
-            "nickname" : "Mostafa Sameh",
-            "primaryPosition" : 1,
-            "secondaryPosition" : 0,
-            "jerseyNo" : "10",
-            "height" : 175,
-            "weight" : 70,
-            "dateOfBirth" : Timestamp(date: dateFormatter.date(from: "1/1/1992")!),
-            "nationality" : "Egyptian",
-            "hometown" : "Alexandria, Egypt",
-            "avatar": ""
-        ]
-        
-        playersDocumentID = "\(teamDocumentID)/Players"
-        
-        documentsToWrite += 1
-
-        playerRef = database.collection(playersDocumentID).addDocument(data: playerData) { (error) in
-            if let error = error {
-                print("Error writing document: \(error)")
-                completion(error)
-                return
-            } else {
-                completedDocuments += 1
-                print("Document successfully written!")
-            }
+    }
+    
+    func getStatisticalMinimumGames(games : Int) -> Int {
+        var constraint = 0
+        var negativeValue = 1
+        if(games == 0) {
+            return 0
         }
-        
-        playerStatsDocumentID = "\(playersDocumentID)/\(playerRef!.documentID)/PlayerStats"
-        
-        playerStatsData = [
-            "gamesPlayed" : 1,
-            "3FGA" : 1,
-            "3FGM" : 0,
-            "3FG%" : 0.0,
-            "2FGA" : 0,
-            "2FGM" : 0,
-            "2FG%" : 0.0,
-            "FGA" : 1,
-            "FGM" : 0,
-            "FG%" : 0.0,
-            "FTA" : 0,
-            "FTM" : 0,
-            "FT%" : 0.0,
-            "PTS" : 0,
-            "ORB" : 0,
-            "DRB" : 2,
-            "TREB" : 2,
-            "AST" : 1,
-            "BLK" : 0,
-            "TO" : 1,
-            "STL" : 0,
-            "FOL" : 2,
-            "MINS" : 6.42,
-            "EFF" : 1
-        ]
-        
-        documentsToWrite += 1
-        database.collection(playerStatsDocumentID).document(currentSeason).setData(playerStatsData) { (error) in
-            if let error = error {
-                print("Error writing document: \(error)")
-                completion(error)
-                return
-            } else {
-                completedDocuments += 1
-                print("Document successfully written!")
-            }
-        }
-        
-        for i in 1...14 {
-            let zoneData : [String : Any] = [
-                "zoneNumber" : i,
-                "FGA" : 0,
-                "FGM" : 0,
-                "FG%" : 0.0,
-                "PTS" : 0
-            ]
-            
-            let zoneName = "Zone-\(i)"
-            documentsToWrite += 1
-            database.collection("\(playerStatsDocumentID)/\(currentSeason)/StatsPerZone").document(zoneName).setData(zoneData) { error in
-                if let error = error {
-                    print("Error writing document: \(error)")
-                    completion(error)
-                    return
-                } else {
-                    completedDocuments += 1
-                    print("Document successfully written!")
+        for i in 1...games {
+            if(i == 1 || i == 2) {
+                constraint += 1
+            } else if((i-negativeValue)%3 != 0) {
+                constraint += 1
+                if((i-2)%10 == 0) {
+                    negativeValue += 1
+                    if(negativeValue == 3){
+                        negativeValue = 0
+                    }
                 }
             }
         }
-        
-        playerGameStatsDocumentID = "\(playersDocumentID)/\(playerRef!.documentID)/PlayerGameStats"
-        
-        playerGameStatsData = [
-            "gameID" : "HOCvsSUNS_27-2-2019",
-            "opponentName" : "Shams",
-            "3FGA" : 1,
-            "3FGM" : 0,
-            "3FG%" : 0.0,
-            "2FGA" : 0,
-            "2FGM" : 0,
-            "2FG%" : 0.0,
-            "FGA" : 1,
-            "FGM" : 0,
-            "FG%" : 0.0,
-            "FTA" : 0,
-            "FTM" : 0,
-            "FT%" : 0.0,
-            "PTS" : 0,
-            "ORB" : 0,
-            "DRB" : 2,
-            "TREB" : 2,
-            "AST" : 1,
-            "BLK" : 0,
-            "TO" : 1,
-            "STL" : 0,
-            "FOL" : 2,
-            "MINS" : 6.42,
-            "EFF" : 1
-        ]
-        
-        documentsToWrite += 1
-        database.collection(playerGameStatsDocumentID).document(playerGameStatsData["gameID"] as! String).setData(playerStatsData) { (error) in
-            if let error = error {
-                print("Error writing document: \(error)")
-                completion(error)
-                return
+        return constraint
+    }
+    
+    func getStatisticalMinimumFGMade(games : Int) -> Int {
+        var result = 0
+        if(games == 0) {
+            return 0
+        }
+        for i in 1...games {
+            if(i%3 == 0) {
+                result += 3
             } else {
-                completedDocuments += 1
-                print("Document successfully written!")
+                result += 4
             }
         }
+        return result
+    }
+    
+    func getStatisticalMinimumFTMade(games : Int) -> Int {
+        if(games == 0) {
+            return 0
+        }
         
-        for i in 1...14 {
-            let zoneData : [String : Any] = [
-                "zoneNumber" : i,
-                "FGA" : 0,
-                "FGM" : 0,
-                "FG%" : 0.0,
-                "PTS" : 0
-            ]
+        var result = 0
+        var addTwoOnEven = true
+        var constraint = 1
+        
+        for i in 1...games {
+            if((i-constraint)%20 == 0 && i > constraint) {
+                addTwoOnEven = !addTwoOnEven
+            }
             
-            let zoneName = "Zone-\(i)"
-            documentsToWrite += 1
-            let playerZoneID = "\(playerGameStatsDocumentID)/\(playerGameStatsData["gameID"] as! String)/StatsPerZone"
-            database.collection(playerZoneID).document(zoneName).setData(zoneData) { error in
-                if let error = error {
-                    print("Error writing document: \(error)")
-                    completion(error)
-                    return
-                } else {
-                    completedDocuments += 1
-                    print("Document successfully written!")
+            if(i%2 == 0 || i == 1) {
+                result += addTwoOnEven ? 2 : 1
+            } else {
+                result += addTwoOnEven ? 1 : 2
+            }
+            
+            if(i%20 == 0 && i > 20) {
+                constraint += 1
+            }
+        }
+        return result
+    }
+    
+    //MARK:- Standings Functions
+    func getStanding(source: FirestoreSource, documentID: String,completion: @escaping (Error?) -> Void) {
+        database.collection("Standings").document(documentID).getDocument(source: source) { (document, error) in
+            if let error = error {
+                completion(error)
+            } else {
+                completion(nil)
+            }
+        }
+    }
+    
+    //MARK:- Old Functions
+    func AddWinsLossesForAllTeams(completion: @escaping (Error?) -> Void) {
+        var totalCount = 0
+        var count = 0
+        database.collection("Teams").getDocuments { (teams, error) in
+            if let error = error {
+                completion(error)
+            } else {
+                for team in teams!.documents {
+                    var wins = 0
+                    var losses = 0
+                    team.reference.collection("TeamGameStats").getDocuments(completion: { (gameStats, error) in
+                        if let error = error {
+                            completion(error)
+                        } else {
+                            totalCount += gameStats!.count
+                            for game in gameStats!.documents {
+                                if((game.get("PTS") as! Int) >= (game.get("opponentPTS") as! Int)) {
+                                    wins += 1
+                                } else {
+                                    losses += 1
+                                }
+                            }
+                            team.reference.collection("TeamStats").document("18-19").updateData(["wins":wins, "losses":losses], completion: { (error) in
+                                if let error = error {
+                                    completion(error)
+                                } else {
+                                    count += 1
+                                    print("Updated Team Stats For Team \(team.documentID)")
+                                    if(count == totalCount) {
+                                        completion(nil)
+                                    }
+                                }
+                            })
+                        }
+                    })
                 }
             }
         }
+    }
         
-        playerData = [
-            "firstName" : "Zeyad",
-            "lastName" : "Atef",
-            "nickname" : "Zeyad Atef",
-            "primaryPosition" : 1,
-            "secondaryPosition" : 2,
-            "jerseyNo" : "9",
-            "height" : 182,
-            "weight" : 80,
-            "dateOfBirth" : Timestamp(date: dateFormatter.date(from: "19/6/1994")!),
-            "nationality" : "Egyptian",
-            "hometown" : "Alexandria, Egypt",
-            "avatar": ""
-        ]
-        
-        playersDocumentID = "\(teamDocumentID)/Players"
-        
-        documentsToWrite += 1
-        
-        playerRef = database.collection(playersDocumentID).addDocument(data: playerData) { (error) in
+    func AddTeamToPlayerStats(completion: @escaping (Error?) -> Void) {
+        var count = 0
+        database.collectionGroup("PlayerStats").getDocuments { (snapshot, error) in
             if let error = error {
-                print("Error writing document: \(error)")
                 completion(error)
-                return
             } else {
-                completedDocuments += 1
-                print("Document successfully written!")
-            }
-        }
-        
-        playerStatsDocumentID = "\(playersDocumentID)/\(playerRef!.documentID)/PlayerStats"
-        
-        playerStatsData = [
-            "gamesPlayed" : 1,
-            "3FGA" : 2,
-            "3FGM" : 1,
-            "3FG%" : 0.5,
-            "2FGA" : 0,
-            "2FGM" : 0,
-            "2FG%" : 0.0,
-            "FGA" : 2,
-            "FGM" : 1,
-            "FG%" : 0.5,
-            "FTA" : 2,
-            "FTM" : 1,
-            "FT%" : 0.5,
-            "PTS" : 4,
-            "ORB" : 0,
-            "DRB" : 1,
-            "TREB" : 1,
-            "AST" : 2,
-            "BLK" : 0,
-            "TO" : 2,
-            "STL" : 3,
-            "FOL" : 2,
-            "MINS" : 23.0,
-            "EFF" : 6
-        ]
-        
-        documentsToWrite += 1
-        database.collection(playerStatsDocumentID).document(currentSeason).setData(playerStatsData) { (error) in
-            if let error = error {
-                print("Error writing document: \(error)")
-                completion(error)
-                return
-            } else {
-                completedDocuments += 1
-                print("Document successfully written!")
-            }
-        }
-        
-        for i in 1...14 {
-            let zoneData : [String : Any] = [
-                "zoneNumber" : i,
-                "FGA" : 0,
-                "FGM" : 0,
-                "FG%" : 0.0,
-                "PTS" : 0
-            ]
-            
-            let zoneName = "Zone-\(i)"
-            documentsToWrite += 1
-            database.collection("\(playerStatsDocumentID)/\(currentSeason)/StatsPerZone").document(zoneName).setData(zoneData) { error in
-                if let error = error {
-                    print("Error writing document: \(error)")
-                    completion(error)
-                    return
-                } else {
-                    completedDocuments += 1
-                    print("Document successfully written!")
+                for document in snapshot!.documents {
+                    var data = document.data()
+                    let playerRef = String(document.reference.path.split(separator: "/")[1])
+                    if(playerRef.count > 3) {
+                        self.database.collection("Players").document(playerRef).getDocument(completion: { (player, error) in
+                            if let error = error {
+                                completion(error)
+                            } else {
+                                data["team"] = player!.get("currentTeam") as! String
+                                document.reference.updateData(data, completion: { (error) in
+                                    if let error = error {
+                                        completion(error)
+                                    } else {
+                                        count += 1
+                                        if(count == snapshot!.count) {
+                                            completion(nil)
+                                        }
+                                    }
+                                })
+                            }
+                        })
+                    }
                 }
             }
         }
-        
-        playerGameStatsDocumentID = "\(playersDocumentID)/\(playerRef!.documentID)/PlayerGameStats"
-        
-        playerGameStatsData = [
-            "gameID" : "HOCvsSUNS_27-2-2019",
-            "opponentName" : "Shams",
-            "3FGA" : 2,
-            "3FGM" : 1,
-            "3FG%" : 0.5,
-            "2FGA" : 0,
-            "2FGM" : 0,
-            "2FG%" : 0.0,
-            "FGA" : 2,
-            "FGM" : 1,
-            "FG%" : 0.5,
-            "FTA" : 2,
-            "FTM" : 1,
-            "FT%" : 0.5,
-            "PTS" : 4,
-            "ORB" : 0,
-            "DRB" : 1,
-            "TREB" : 1,
-            "AST" : 2,
-            "BLK" : 0,
-            "TO" : 2,
-            "STL" : 3,
-            "FOL" : 2,
-            "MINS" : 23.0,
-            "EFF" : 6
-        ]
-        
-        documentsToWrite += 1
-        database.collection(playerGameStatsDocumentID).document(playerGameStatsData["gameID"] as! String).setData(playerStatsData) { (error) in
-            if let error = error {
-                print("Error writing document: \(error)")
-                completion(error)
-                return
-            } else {
-                completedDocuments += 1
-                print("Document successfully written!")
+    }
+    
+    func AddPlayoffRounds(completion: @escaping (Error?) -> Void) {
+        for i in 1...8 {
+            var origin1 = ""
+            var origin2 = ""
+            switch i {
+            case 1:
+                origin1 = "A1"
+                origin2 = "D4"
+            case 2:
+                origin1 = "B2"
+                origin2 = "C3"
+            case 3:
+                origin1 = "D2"
+                origin2 = "A3"
+            case 4:
+                origin1 = "C1"
+                origin2 = "B4"
+            case 5:
+                origin1 = "A2"
+                origin2 = "D3"
+            case 6:
+                origin1 = "B1"
+                origin2 = "C4"
+            case 7:
+                origin1 = "D1"
+                origin2 = "A4"
+            case 8:
+                origin1 = "C2"
+                origin2 = "B3"
+            default:
+                origin1 = ""
             }
-        }
-        
-        for i in 1...14 {
-            let zoneData : [String : Any] = [
-                "zoneNumber" : i,
-                "FGA" : 0,
-                "FGM" : 0,
-                "FG%" : 0.0,
-                "PTS" : 0
+            let data : [String:Any] = [
+                "gameID" : i,
+                "teamA" : [
+                    "abb" : "TBA",
+                    "origin" : origin1,
+                    "men" : [
+                        "wins" : 0,
+                        "losses" : 0,
+                        "scoreDifference" : 0
+                    ],
+                    "u16" : [
+                        "wins" : 0,
+                        "losses" : 0,
+                        "scoreDifference" : 0
+                    ]
+                ],
+                "teamB" : [
+                    "abb" : "TBA",
+                    "origin" : origin2,
+                    "men" : [
+                        "wins" : 0,
+                        "losses" : 0,
+                        "scoreDifference" : 0
+                    ],
+                    "u16" : [
+                        "wins" : 0,
+                        "losses" : 0,
+                        "scoreDifference" : 0
+                    ]
+                ],
+                "winner" : NSNull(),
+                "loser" : NSNull()
             ]
-            
-            let zoneName = "Zone-\(i)"
-            documentsToWrite += 1
-            let playerZoneID = "\(playerGameStatsDocumentID)/\(playerGameStatsData["gameID"] as! String)/StatsPerZone"
-            database.collection(playerZoneID).document(zoneName).setData(zoneData) { error in
+            database.collection("/Standings/U1GW71m8VQUg8icYAH5g/PlayoffsTree").addDocument(data: data) { (error) in
                 if let error = error {
-                    print("Error writing document: \(error)")
                     completion(error)
-                    return
                 } else {
-                    completedDocuments += 1
-                    print("Document successfully written!")
-                }
-            }
-        }
-        
-        playerData = [
-            "firstName" : "Omar",
-            "lastName" : "Mesha'al",
-            "nickname" : "Omar Mesha'al",
-            "primaryPosition" : 1,
-            "secondaryPosition" : 0,
-            "jerseyNo" : "18",
-            "height" : 172,
-            "weight" : 72,
-            "nationality" : "Egyptian",
-            "dateOfBirth" : Timestamp(date: dateFormatter.date(from: "1/1/1998")!),
-            "hometown" : "Alexandria, Egypt",
-            "avatar": ""
-        ]
-        
-        playersDocumentID = "\(teamDocumentID)/Players"
-        
-        documentsToWrite += 1
-        
-        playerRef = database.collection(playersDocumentID).addDocument(data: playerData) { (error) in
-            if let error = error {
-                print("Error writing document: \(error)")
-                completion(error)
-                return
-            } else {
-                completedDocuments += 1
-                print("Document successfully written!")
-            }
-        }
-        
-        playerStatsDocumentID = "\(playersDocumentID)/\(playerRef!.documentID)/PlayerStats"
-        
-        playerStatsData = [
-            "gamesPlayed" : 0,
-            "3FGA" : 0,
-            "3FGM" : 0,
-            "3FG%" : 0,
-            "2FGA" : 0,
-            "2FGM" : 0,
-            "2FG%" : 0.0,
-            "FGA" : 0,
-            "FGM" : 0,
-            "FG%" : 0.0,
-            "FTA" : 0,
-            "FTM" : 0,
-            "FT%" : 0.0,
-            "PTS" : 0,
-            "ORB" : 0,
-            "DRB" : 0,
-            "TREB" : 0,
-            "AST" : 0,
-            "BLK" : 0,
-            "TO" : 0,
-            "STL" : 0,
-            "FOL" : 0,
-            "MINS" : 0.0,
-            "EFF" : 0
-        ]
-        
-        documentsToWrite += 1
-        database.collection(playerStatsDocumentID).document(currentSeason).setData(playerStatsData) { (error) in
-            if let error = error {
-                print("Error writing document: \(error)")
-                completion(error)
-                return
-            } else {
-                completedDocuments += 1
-                print("Document successfully written!")
-            }
-        }
-        
-        for i in 1...14 {
-            let zoneData : [String : Any] = [
-                "zoneNumber" : i,
-                "FGA" : 0,
-                "FGM" : 0,
-                "FG%" : 0.0,
-                "PTS" : 0
-            ]
-            
-            let zoneName = "Zone-\(i)"
-            documentsToWrite += 1
-            database.collection("\(playerStatsDocumentID)/\(currentSeason)/StatsPerZone").document(zoneName).setData(zoneData) { error in
-                if let error = error {
-                    print("Error writing document: \(error)")
-                    completion(error)
-                    return
-                } else {
-                    completedDocuments += 1
-                    print("Document successfully written!")
-                }
-            }
-        }
-        
-        playerData = [
-            "firstName" : "Nour",
-            "lastName" : "Emad",
-            "nickname" : "Nour Emad",
-            "primaryPosition" : 2,
-            "secondaryPosition" : 0,
-            "jerseyNo" : "00",
-            "height" : 175,
-            "weight" : 70,
-            "nationality" : "Egyptian",
-            "dateOfBirth" : Timestamp(date: dateFormatter.date(from: "1/1/1983")!),
-            "hometown" : "Alexandria, Egypt",
-            "avatar": ""
-        ]
-        
-        playersDocumentID = "\(teamDocumentID)/Players"
-        
-        documentsToWrite += 1
-        
-        playerRef = database.collection(playersDocumentID).addDocument(data: playerData) { (error) in
-            if let error = error {
-                print("Error writing document: \(error)")
-                completion(error)
-                return
-            } else {
-                completedDocuments += 1
-                print("Document successfully written!")
-            }
-        }
-        
-        playerStatsDocumentID = "\(playersDocumentID)/\(playerRef!.documentID)/PlayerStats"
-        
-        playerStatsData = [
-            "gamesPlayed" : 1,
-            "3FGA" : 2,
-            "3FGM" : 1,
-            "3FG%" : 0.5,
-            "2FGA" : 4,
-            "2FGM" : 2,
-            "2FG%" : 0.5,
-            "FGA" : 6,
-            "FGM" : 3,
-            "FG%" : 0.5,
-            "FTA" : 0,
-            "FTM" : 0,
-            "FT%" : 0.0,
-            "PTS" : 7,
-            "ORB" : 0,
-            "DRB" : 3,
-            "TREB" : 3,
-            "AST" : 2,
-            "BLK" : 0,
-            "TO" : 1,
-            "STL" : 0,
-            "FOL" : 3,
-            "MINS" : 15.05,
-            "EFF" : 8
-        ]
-        
-        documentsToWrite += 1
-        database.collection(playerStatsDocumentID).document(currentSeason).setData(playerStatsData) { (error) in
-            if let error = error {
-                print("Error writing document: \(error)")
-                completion(error)
-                return
-            } else {
-                completedDocuments += 1
-                print("Document successfully written!")
-            }
-        }
-        
-        for i in 1...14 {
-            let zoneData : [String : Any] = [
-                "zoneNumber" : i,
-                "FGA" : 0,
-                "FGM" : 0,
-                "FG%" : 0.0,
-                "PTS" : 0
-            ]
-            
-            let zoneName = "Zone-\(i)"
-            documentsToWrite += 1
-            database.collection("\(playerStatsDocumentID)/\(currentSeason)/StatsPerZone").document(zoneName).setData(zoneData) { error in
-                if let error = error {
-                    print("Error writing document: \(error)")
-                    completion(error)
-                    return
-                } else {
-                    completedDocuments += 1
-                    print("Document successfully written!")
-                }
-            }
-        }
-        
-        playerGameStatsDocumentID = "\(playersDocumentID)/\(playerRef!.documentID)/PlayerGameStats"
-        
-        playerGameStatsData = [
-            "gameID" : "HOCvsSUNS_27-2-2019",
-            "opponentName" : "Shams",
-            "3FGA" : 2,
-            "3FGM" : 1,
-            "3FG%" : 0.5,
-            "2FGA" : 4,
-            "2FGM" : 2,
-            "2FG%" : 0.5,
-            "FGA" : 6,
-            "FGM" : 3,
-            "FG%" : 0.5,
-            "FTA" : 0,
-            "FTM" : 0,
-            "FT%" : 0.0,
-            "PTS" : 7,
-            "ORB" : 0,
-            "DRB" : 3,
-            "TREB" : 3,
-            "AST" : 2,
-            "BLK" : 0,
-            "TO" : 1,
-            "STL" : 0,
-            "FOL" : 3,
-            "MINS" : 15.05,
-            "EFF" : 8
-        ]
-        
-        documentsToWrite += 1
-        database.collection(playerGameStatsDocumentID).document(playerGameStatsData["gameID"] as! String).setData(playerStatsData) { (error) in
-            if let error = error {
-                print("Error writing document: \(error)")
-                completion(error)
-                return
-            } else {
-                completedDocuments += 1
-                print("Document successfully written!")
-            }
-        }
-        
-        for i in 1...14 {
-            let zoneData : [String : Any] = [
-                "zoneNumber" : i,
-                "FGA" : 0,
-                "FGM" : 0,
-                "FG%" : 0.0,
-                "PTS" : 0
-            ]
-            
-            let zoneName = "Zone-\(i)"
-            documentsToWrite += 1
-            let playerZoneID = "\(playerGameStatsDocumentID)/\(playerGameStatsData["gameID"] as! String)/StatsPerZone"
-            database.collection(playerZoneID).document(zoneName).setData(zoneData) { error in
-                if let error = error {
-                    print("Error writing document: \(error)")
-                    completion(error)
-                    return
-                } else {
-                    completedDocuments += 1
-                    print("Document successfully written!")
-                }
-            }
-        }
-        
-        playerData = [
-            "firstName" : "Jajuan",
-            "lastName" : "Smith",
-            "nickname" : "Jaylon Smith",
-            "primaryPosition" : 2,
-            "secondaryPosition" : 0,
-            "jerseyNo" : "2",
-            "height" : 185,
-            "weight" : 83,
-            "nationality" : "American",
-            "dateOfBirth" : Timestamp(date: dateFormatter.date(from: "1/1/1995")!),
-            "hometown" : "Memphis, Tennessee",
-            "avatar": ""
-        ]
-        
-        playersDocumentID = "\(teamDocumentID)/Players"
-        
-        documentsToWrite += 1
-        
-        playerRef = database.collection(playersDocumentID).addDocument(data: playerData) { (error) in
-            if let error = error {
-                print("Error writing document: \(error)")
-                completion(error)
-                return
-            } else {
-                completedDocuments += 1
-                print("Document successfully written!")
-            }
-        }
-        
-        playerStatsDocumentID = "\(playersDocumentID)/\(playerRef!.documentID)/PlayerStats"
-        
-        playerStatsData = [
-            "gamesPlayed" : 1,
-            "3FGA" : 7,
-            "3FGM" : 4,
-            "3FG%" : 0.57,
-            "2FGA" : 14,
-            "2FGM" : 5,
-            "2FG%" : 0.36,
-            "FGA" : 21,
-            "FGM" : 9,
-            "FG%" : 0.43,
-            "FTA" : 7,
-            "FTM" : 4,
-            "FT%" : 0.57,
-            "PTS" : 26,
-            "ORB" : 2,
-            "DRB" : 3,
-            "TREB" : 5,
-            "AST" : 2,
-            "BLK" : 0,
-            "TO" : 1,
-            "STL" : 2,
-            "FOL" : 0,
-            "MINS" : 36.07,
-            "EFF" : 19
-        ]
-        
-        documentsToWrite += 1
-        database.collection(playerStatsDocumentID).document(currentSeason).setData(playerStatsData) { (error) in
-            if let error = error {
-                print("Error writing document: \(error)")
-                completion(error)
-                return
-            } else {
-                completedDocuments += 1
-                print("Document successfully written!")
-            }
-        }
-        
-        for i in 1...14 {
-            let zoneData : [String : Any] = [
-                "zoneNumber" : i,
-                "FGA" : 0,
-                "FGM" : 0,
-                "FG%" : 0.0,
-                "PTS" : 0
-            ]
-            
-            let zoneName = "Zone-\(i)"
-            documentsToWrite += 1
-            database.collection("\(playerStatsDocumentID)/\(currentSeason)/StatsPerZone").document(zoneName).setData(zoneData) { error in
-                if let error = error {
-                    print("Error writing document: \(error)")
-                    completion(error)
-                    return
-                } else {
-                    completedDocuments += 1
-                    print("Document successfully written!")
-                }
-            }
-        }
-        
-        playerGameStatsDocumentID = "\(playersDocumentID)/\(playerRef!.documentID)/PlayerGameStats"
-        
-        playerGameStatsData = [
-            "gameID" : "HOCvsSUNS_27-2-2019",
-            "opponentName" : "Shams",
-            "3FGA" : 7,
-            "3FGM" : 4,
-            "3FG%" : 0.57,
-            "2FGA" : 14,
-            "2FGM" : 5,
-            "2FG%" : 0.36,
-            "FGA" : 21,
-            "FGM" : 9,
-            "FG%" : 0.43,
-            "FTA" : 7,
-            "FTM" : 4,
-            "FT%" : 0.57,
-            "PTS" : 26,
-            "ORB" : 2,
-            "DRB" : 3,
-            "TREB" : 5,
-            "AST" : 2,
-            "BLK" : 0,
-            "TO" : 1,
-            "STL" : 2,
-            "FOL" : 0,
-            "MINS" : 36.07,
-            "EFF" : 19
-        ]
-        
-        documentsToWrite += 1
-        database.collection(playerGameStatsDocumentID).document(playerGameStatsData["gameID"] as! String).setData(playerStatsData) { (error) in
-            if let error = error {
-                print("Error writing document: \(error)")
-                completion(error)
-                return
-            } else {
-                completedDocuments += 1
-                print("Document successfully written!")
-            }
-        }
-        
-        for i in 1...14 {
-            let zoneData : [String : Any] = [
-                "zoneNumber" : i,
-                "FGA" : 0,
-                "FGM" : 0,
-                "FG%" : 0.0,
-                "PTS" : 0
-            ]
-            
-            let zoneName = "Zone-\(i)"
-            documentsToWrite += 1
-            let playerZoneID = "\(playerGameStatsDocumentID)/\(playerGameStatsData["gameID"] as! String)/StatsPerZone"
-            database.collection(playerZoneID).document(zoneName).setData(zoneData) { error in
-                if let error = error {
-                    print("Error writing document: \(error)")
-                    completion(error)
-                    return
-                } else {
-                    completedDocuments += 1
-                    print("Document successfully written!")
-                }
-            }
-        }
-        
-        playerData = [
-            "firstName" : "Abdelrahman",
-            "lastName" : "Soliman",
-            "nickname" : "Abdelrahman Soliman",
-            "primaryPosition" : 2,
-            "secondaryPosition" : 0,
-            "jerseyNo" : "1",
-            "height" : 175,
-            "weight" : 72,
-            "nationality" : "Egyptian",
-            "dateOfBirth" : Timestamp(date: dateFormatter.date(from: "1/1/1995")!),
-            "hometown" : "Alexandria, Egypt",
-            "avatar": ""
-        ]
-        
-        playersDocumentID = "\(teamDocumentID)/Players"
-        
-        documentsToWrite += 1
-        
-        playerRef = database.collection(playersDocumentID).addDocument(data: playerData) { (error) in
-            if let error = error {
-                print("Error writing document: \(error)")
-                completion(error)
-                return
-            } else {
-                completedDocuments += 1
-                print("Document successfully written!")
-            }
-        }
-        
-        playerStatsDocumentID = "\(playersDocumentID)/\(playerRef!.documentID)/PlayerStats"
-        
-        playerStatsData = [
-            "gamesPlayed" : 0,
-            "3FGA" : 0,
-            "3FGM" : 0,
-            "3FG%" : 0,
-            "2FGA" : 0,
-            "2FGM" : 0,
-            "2FG%" : 0.0,
-            "FGA" : 0,
-            "FGM" : 0,
-            "FG%" : 0.0,
-            "FTA" : 0,
-            "FTM" : 0,
-            "FT%" : 0.0,
-            "PTS" : 0,
-            "ORB" : 0,
-            "DRB" : 0,
-            "TREB" : 0,
-            "AST" : 0,
-            "BLK" : 0,
-            "TO" : 0,
-            "STL" : 0,
-            "FOL" : 0,
-            "MINS" : 0.0,
-            "EFF" : 0
-        ]
-        
-        documentsToWrite += 1
-        database.collection(playerStatsDocumentID).document(currentSeason).setData(playerStatsData) { (error) in
-            if let error = error {
-                print("Error writing document: \(error)")
-                completion(error)
-                return
-            } else {
-                completedDocuments += 1
-                print("Document successfully written!")
-            }
-        }
-        
-        for i in 1...14 {
-            let zoneData : [String : Any] = [
-                "zoneNumber" : i,
-                "FGA" : 0,
-                "FGM" : 0,
-                "FG%" : 0.0,
-                "PTS" : 0
-            ]
-            
-            let zoneName = "Zone-\(i)"
-            documentsToWrite += 1
-            database.collection("\(playerStatsDocumentID)/\(currentSeason)/StatsPerZone").document(zoneName).setData(zoneData) { error in
-                if let error = error {
-                    print("Error writing document: \(error)")
-                    completion(error)
-                    return
-                } else {
-                    completedDocuments += 1
-                    print("Document successfully written!")
-                }
-            }
-        }
-        
-        playerData = [
-            "firstName" : "Ahmed Khaled",
-            "lastName" : "Kandil",
-            "nickname" : "Ahmed Kandil",
-            "primaryPosition" : 2,
-            "secondaryPosition" : 0,
-            "jerseyNo" : "6",
-            "height" : 175,
-            "weight" : 72,
-            "nationality" : "Egyptian",
-            "dateOfBirth" : Timestamp(date: dateFormatter.date(from: "1/1/1998")!),
-            "hometown" : "Alexandria, Egypt",
-            "avatar": ""
-        ]
-        
-        playersDocumentID = "\(teamDocumentID)/Players"
-        
-        documentsToWrite += 1
-        
-        playerRef = database.collection(playersDocumentID).addDocument(data: playerData) { (error) in
-            if let error = error {
-                print("Error writing document: \(error)")
-                completion(error)
-                return
-            } else {
-                completedDocuments += 1
-                print("Document successfully written!")
-            }
-        }
-        
-        playerStatsDocumentID = "\(playersDocumentID)/\(playerRef!.documentID)/PlayerStats"
-        
-        playerStatsData = [
-            "gamesPlayed" : 0,
-            "3FGA" : 0,
-            "3FGM" : 0,
-            "3FG%" : 0,
-            "2FGA" : 0,
-            "2FGM" : 0,
-            "2FG%" : 0.0,
-            "FGA" : 0,
-            "FGM" : 0,
-            "FG%" : 0.0,
-            "FTA" : 0,
-            "FTM" : 0,
-            "FT%" : 0.0,
-            "PTS" : 0,
-            "ORB" : 0,
-            "DRB" : 0,
-            "TREB" : 0,
-            "AST" : 0,
-            "BLK" : 0,
-            "TO" : 0,
-            "STL" : 0,
-            "FOL" : 0,
-            "MINS" : 0.0,
-            "EFF" : 0
-        ]
-        
-        documentsToWrite += 1
-        database.collection(playerStatsDocumentID).document(currentSeason).setData(playerStatsData) { (error) in
-            if let error = error {
-                print("Error writing document: \(error)")
-                completion(error)
-                return
-            } else {
-                completedDocuments += 1
-                print("Document successfully written!")
-            }
-        }
-        
-        for i in 1...14 {
-            let zoneData : [String : Any] = [
-                "zoneNumber" : i,
-                "FGA" : 0,
-                "FGM" : 0,
-                "FG%" : 0.0,
-                "PTS" : 0
-            ]
-            
-            let zoneName = "Zone-\(i)"
-            documentsToWrite += 1
-            database.collection("\(playerStatsDocumentID)/\(currentSeason)/StatsPerZone").document(zoneName).setData(zoneData) { error in
-                if let error = error {
-                    print("Error writing document: \(error)")
-                    completion(error)
-                    return
-                } else {
-                    completedDocuments += 1
-                    print("Document successfully written!")
-                }
-            }
-        }
-        
-        playerData = [
-            "firstName" : "Marwan",
-            "lastName" : "El-Shafa'e",
-            "nickname" : "Marwan El-Shafa'e",
-            "primaryPosition" : 2,
-            "secondaryPosition" : 0,
-            "jerseyNo" : "66",
-            "height" : 183,
-            "weight" : 75,
-            "nationality" : "Egyptian",
-            "dateOfBirth" : Timestamp(date: dateFormatter.date(from: "1/1/2000")!),
-            "hometown" : "Alexandria, Egypt",
-            "avatar": ""
-        ]
-        
-        playersDocumentID = "\(teamDocumentID)/Players"
-        
-        documentsToWrite += 1
-        
-        playerRef = database.collection(playersDocumentID).addDocument(data: playerData) { (error) in
-            if let error = error {
-                print("Error writing document: \(error)")
-                completion(error)
-                return
-            } else {
-                completedDocuments += 1
-                print("Document successfully written!")
-            }
-        }
-        
-        playerStatsDocumentID = "\(playersDocumentID)/\(playerRef!.documentID)/PlayerStats"
-        
-        playerStatsData = [
-            "gamesPlayed" : 0,
-            "3FGA" : 0,
-            "3FGM" : 0,
-            "3FG%" : 0,
-            "2FGA" : 0,
-            "2FGM" : 0,
-            "2FG%" : 0.0,
-            "FGA" : 0,
-            "FGM" : 0,
-            "FG%" : 0.0,
-            "FTA" : 0,
-            "FTM" : 0,
-            "FT%" : 0.0,
-            "PTS" : 0,
-            "ORB" : 0,
-            "DRB" : 0,
-            "TREB" : 0,
-            "AST" : 0,
-            "BLK" : 0,
-            "TO" : 0,
-            "STL" : 0,
-            "FOL" : 0,
-            "MINS" : 0.0,
-            "EFF" : 0
-        ]
-        
-        documentsToWrite += 1
-        database.collection(playerStatsDocumentID).document(currentSeason).setData(playerStatsData) { (error) in
-            if let error = error {
-                print("Error writing document: \(error)")
-                completion(error)
-                return
-            } else {
-                completedDocuments += 1
-                print("Document successfully written!")
-            }
-        }
-        
-        for i in 1...14 {
-            let zoneData : [String : Any] = [
-                "zoneNumber" : i,
-                "FGA" : 0,
-                "FGM" : 0,
-                "FG%" : 0.0,
-                "PTS" : 0
-            ]
-            
-            let zoneName = "Zone-\(i)"
-            documentsToWrite += 1
-            database.collection("\(playerStatsDocumentID)/\(currentSeason)/StatsPerZone").document(zoneName).setData(zoneData) { error in
-                if let error = error {
-                    print("Error writing document: \(error)")
-                    completion(error)
-                    return
-                } else {
-                    completedDocuments += 1
-                    print("Document successfully written!")
-                }
-            }
-        }
-        
-        playerData = [
-            "firstName" : "Amir",
-            "lastName" : "Alaa",
-            "nickname" : "Amir Alaa",
-            "primaryPosition" : 2,
-            "secondaryPosition" : 3,
-            "jerseyNo" : "11",
-            "height" : 185,
-            "weight" : 85,
-            "nationality" : "Egyptian",
-            "dateOfBirth" : Timestamp(date: dateFormatter.date(from: "1/1/1995")!),
-            "hometown" : "Alexandria, Egypt",
-            "avatar": ""
-        ]
-        
-        playersDocumentID = "\(teamDocumentID)/Players"
-        
-        documentsToWrite += 1
-        
-        playerRef = database.collection(playersDocumentID).addDocument(data: playerData) { (error) in
-            if let error = error {
-                print("Error writing document: \(error)")
-                completion(error)
-                return
-            } else {
-                completedDocuments += 1
-                print("Document successfully written!")
-            }
-        }
-        
-        playerStatsDocumentID = "\(playersDocumentID)/\(playerRef!.documentID)/PlayerStats"
-        
-        playerStatsData = [
-            "gamesPlayed" : 1,
-            "3FGA" : 0,
-            "3FGM" : 0,
-            "3FG%" : 0.0,
-            "2FGA" : 1,
-            "2FGM" : 1,
-            "2FG%" : 1.0,
-            "FGA" : 1,
-            "FGM" : 1,
-            "FG%" : 1.0,
-            "FTA" : 1,
-            "FTM" : 1,
-            "FT%" : 1.0,
-            "PTS" : 3,
-            "ORB" : 0,
-            "DRB" : 1,
-            "TREB" : 1,
-            "AST" : 1,
-            "BLK" : 0,
-            "TO" : 0,
-            "STL" : 0,
-            "FOL" : 0,
-            "MINS" : 8.02,
-            "EFF" : 5
-        ]
-        
-        documentsToWrite += 1
-        database.collection(playerStatsDocumentID).document(currentSeason).setData(playerStatsData) { (error) in
-            if let error = error {
-                print("Error writing document: \(error)")
-                completion(error)
-                return
-            } else {
-                completedDocuments += 1
-                print("Document successfully written!")
-            }
-        }
-        
-        for i in 1...14 {
-            let zoneData : [String : Any] = [
-                "zoneNumber" : i,
-                "FGA" : 0,
-                "FGM" : 0,
-                "FG%" : 0.0,
-                "PTS" : 0
-            ]
-            
-            let zoneName = "Zone-\(i)"
-            documentsToWrite += 1
-            database.collection("\(playerStatsDocumentID)/\(currentSeason)/StatsPerZone").document(zoneName).setData(zoneData) { error in
-                if let error = error {
-                    print("Error writing document: \(error)")
-                    completion(error)
-                    return
-                } else {
-                    completedDocuments += 1
-                    print("Document successfully written!")
-                }
-            }
-        }
-        
-        playerGameStatsDocumentID = "\(playersDocumentID)/\(playerRef!.documentID)/PlayerGameStats"
-        
-        playerGameStatsData = [
-            "gameID" : "HOCvsSUNS_27-2-2019",
-            "opponentName" : "Shams",
-            "3FGA" : 0,
-            "3FGM" : 0,
-            "3FG%" : 0.0,
-            "2FGA" : 1,
-            "2FGM" : 1,
-            "2FG%" : 1.0,
-            "FGA" : 1,
-            "FGM" : 1,
-            "FG%" : 1.0,
-            "FTA" : 1,
-            "FTM" : 1,
-            "FT%" : 1.0,
-            "PTS" : 3,
-            "ORB" : 0,
-            "DRB" : 1,
-            "TREB" : 1,
-            "AST" : 1,
-            "BLK" : 0,
-            "TO" : 0,
-            "STL" : 0,
-            "FOL" : 0,
-            "MINS" : 8.02,
-            "EFF" : 5
-        ]
-        
-        documentsToWrite += 1
-        database.collection(playerGameStatsDocumentID).document(playerGameStatsData["gameID"] as! String).setData(playerStatsData) { (error) in
-            if let error = error {
-                print("Error writing document: \(error)")
-                completion(error)
-                return
-            } else {
-                completedDocuments += 1
-                print("Document successfully written!")
-            }
-        }
-        
-        for i in 1...14 {
-            let zoneData : [String : Any] = [
-                "zoneNumber" : i,
-                "FGA" : 0,
-                "FGM" : 0,
-                "FG%" : 0.0,
-                "PTS" : 0
-            ]
-            
-            let zoneName = "Zone-\(i)"
-            documentsToWrite += 1
-            let playerZoneID = "\(playerGameStatsDocumentID)/\(playerGameStatsData["gameID"] as! String)/StatsPerZone"
-            database.collection(playerZoneID).document(zoneName).setData(zoneData) { error in
-                if let error = error {
-                    print("Error writing document: \(error)")
-                    completion(error)
-                    return
-                } else {
-                    completedDocuments += 1
-                    print("Document successfully written!")
-                }
-            }
-        }
-        
-        playerData = [
-            "firstName" : "Anwar",
-            "lastName" : "Mohamed",
-            "nickname" : "Anwar Gazara",
-            "primaryPosition" : 2,
-            "secondaryPosition" : 3,
-            "jerseyNo" : "22",
-            "height" : 187,
-            "weight" : 90,
-            "nationality" : "Egyptian",
-            "dateOfBirth" : Timestamp(date: dateFormatter.date(from: "1/1/1989")!),
-            "hometown" : "Damanhour, Egypt",
-            "avatar": ""
-        ]
-        
-        playersDocumentID = "\(teamDocumentID)/Players"
-        
-        documentsToWrite += 1
-        
-        playerRef = database.collection(playersDocumentID).addDocument(data: playerData) { (error) in
-            if let error = error {
-                print("Error writing document: \(error)")
-                completion(error)
-                return
-            } else {
-                completedDocuments += 1
-                print("Document successfully written!")
-            }
-        }
-        
-        playerStatsDocumentID = "\(playersDocumentID)/\(playerRef!.documentID)/PlayerStats"
-        
-        playerStatsData = [
-            "gamesPlayed" : 1,
-            "3FGA" : 1,
-            "3FGM" : 0,
-            "3FG%" : 0.0,
-            "2FGA" : 0,
-            "2FGM" : 0,
-            "2FG%" : 0.0,
-            "FGA" : 1,
-            "FGM" : 0,
-            "FG%" : 0.0,
-            "FTA" : 0,
-            "FTM" : 0,
-            "FT%" : 0.0,
-            "PTS" : 0,
-            "ORB" : 0,
-            "DRB" : 0,
-            "TREB" : 0,
-            "AST" : 0,
-            "BLK" : 0,
-            "TO" : 0,
-            "STL" : 0,
-            "FOL" : 0,
-            "MINS" : 3.2,
-            "EFF" : -1
-        ]
-        
-        documentsToWrite += 1
-        database.collection(playerStatsDocumentID).document(currentSeason).setData(playerStatsData) { (error) in
-            if let error = error {
-                print("Error writing document: \(error)")
-                completion(error)
-                return
-            } else {
-                completedDocuments += 1
-                print("Document successfully written!")
-            }
-        }
-        
-        for i in 1...14 {
-            let zoneData : [String : Any] = [
-                "zoneNumber" : i,
-                "FGA" : 0,
-                "FGM" : 0,
-                "FG%" : 0.0,
-                "PTS" : 0
-            ]
-            
-            let zoneName = "Zone-\(i)"
-            documentsToWrite += 1
-            database.collection("\(playerStatsDocumentID)/\(currentSeason)/StatsPerZone").document(zoneName).setData(zoneData) { error in
-                if let error = error {
-                    print("Error writing document: \(error)")
-                    completion(error)
-                    return
-                } else {
-                    completedDocuments += 1
-                    print("Document successfully written!")
-                }
-            }
-        }
-        
-        playerGameStatsDocumentID = "\(playersDocumentID)/\(playerRef!.documentID)/PlayerGameStats"
-        
-        playerGameStatsData = [
-            "gameID" : "HOCvsSUNS_27-2-2019",
-            "opponentName" : "Shams",
-            "3FGA" : 1,
-            "3FGM" : 0,
-            "3FG%" : 0.0,
-            "2FGA" : 0,
-            "2FGM" : 0,
-            "2FG%" : 0.0,
-            "FGA" : 1,
-            "FGM" : 0,
-            "FG%" : 0.0,
-            "FTA" : 0,
-            "FTM" : 0,
-            "FT%" : 0.0,
-            "PTS" : 0,
-            "ORB" : 0,
-            "DRB" : 0,
-            "TREB" : 0,
-            "AST" : 0,
-            "BLK" : 0,
-            "TO" : 0,
-            "STL" : 0,
-            "FOL" : 0,
-            "MINS" : 3.2,
-            "EFF" : -1
-        ]
-        
-        documentsToWrite += 1
-        database.collection(playerGameStatsDocumentID).document(playerGameStatsData["gameID"] as! String).setData(playerStatsData) { (error) in
-            if let error = error {
-                print("Error writing document: \(error)")
-                completion(error)
-                return
-            } else {
-                completedDocuments += 1
-                print("Document successfully written!")
-            }
-        }
-        
-        for i in 1...14 {
-            let zoneData : [String : Any] = [
-                "zoneNumber" : i,
-                "FGA" : 0,
-                "FGM" : 0,
-                "FG%" : 0.0,
-                "PTS" : 0
-            ]
-            
-            let zoneName = "Zone-\(i)"
-            documentsToWrite += 1
-            let playerZoneID = "\(playerGameStatsDocumentID)/\(playerGameStatsData["gameID"] as! String)/StatsPerZone"
-            database.collection(playerZoneID).document(zoneName).setData(zoneData) { error in
-                if let error = error {
-                    print("Error writing document: \(error)")
-                    completion(error)
-                    return
-                } else {
-                    completedDocuments += 1
-                    print("Document successfully written!")
-                }
-            }
-        }
-        
-        playerData = [
-            "firstName" : "Mohamed",
-            "lastName" : "Hesham",
-            "nickname" : "Mohamed Hesham",
-            "primaryPosition" : 4,
-            "secondaryPosition" : 3,
-            "jerseyNo" : "8",
-            "height" : 193,
-            "weight" : 98,
-            "nationality" : "Egyptian",
-            "dateOfBirth" : Timestamp(date: dateFormatter.date(from: "1/1/1995")!),
-            "hometown" : "Alexandria, Egypt",
-            "avatar": ""
-        ]
-        
-        playersDocumentID = "\(teamDocumentID)/Players"
-        
-        documentsToWrite += 1
-        
-        playerRef = database.collection(playersDocumentID).addDocument(data: playerData) { (error) in
-            if let error = error {
-                print("Error writing document: \(error)")
-                completion(error)
-                return
-            } else {
-                completedDocuments += 1
-                print("Document successfully written!")
-            }
-        }
-        
-        playerStatsDocumentID = "\(playersDocumentID)/\(playerRef!.documentID)/PlayerStats"
-        
-        playerStatsData = [
-            "gamesPlayed" : 1,
-            "3FGA" : 0,
-            "3FGM" : 0,
-            "3FG%" : 0.0,
-            "2FGA" : 3,
-            "2FGM" : 1,
-            "2FG%" : 0.33,
-            "FGA" : 3,
-            "FGM" : 1,
-            "FG%" : 0.33,
-            "FTA" : 2,
-            "FTM" : 2,
-            "FT%" : 1.0,
-            "PTS" : 4,
-            "ORB" : 0,
-            "DRB" : 2,
-            "TREB" : 2,
-            "AST" : 2,
-            "BLK" : 0,
-            "TO" : 0,
-            "STL" : 0,
-            "FOL" : 4,
-            "MINS" : 16.07,
-            "EFF" : 6
-        ]
-        
-        documentsToWrite += 1
-        database.collection(playerStatsDocumentID).document(currentSeason).setData(playerStatsData) { (error) in
-            if let error = error {
-                print("Error writing document: \(error)")
-                completion(error)
-                return
-            } else {
-                completedDocuments += 1
-                print("Document successfully written!")
-            }
-        }
-        
-        for i in 1...14 {
-            let zoneData : [String : Any] = [
-                "zoneNumber" : i,
-                "FGA" : 0,
-                "FGM" : 0,
-                "FG%" : 0.0,
-                "PTS" : 0
-            ]
-            
-            let zoneName = "Zone-\(i)"
-            documentsToWrite += 1
-            database.collection("\(playerStatsDocumentID)/\(currentSeason)/StatsPerZone").document(zoneName).setData(zoneData) { error in
-                if let error = error {
-                    print("Error writing document: \(error)")
-                    completion(error)
-                    return
-                } else {
-                    completedDocuments += 1
-                    print("Document successfully written!")
-                }
-            }
-        }
-        
-        playerGameStatsDocumentID = "\(playersDocumentID)/\(playerRef!.documentID)/PlayerGameStats"
-        
-        playerGameStatsData = [
-            "gameID" : "HOCvsSUNS_27-2-2019",
-            "opponentName" : "Shams",
-            "3FGA" : 0,
-            "3FGM" : 0,
-            "3FG%" : 0.0,
-            "2FGA" : 3,
-            "2FGM" : 1,
-            "2FG%" : 0.33,
-            "FGA" : 3,
-            "FGM" : 1,
-            "FG%" : 0.33,
-            "FTA" : 2,
-            "FTM" : 2,
-            "FT%" : 1.0,
-            "PTS" : 4,
-            "ORB" : 0,
-            "DRB" : 2,
-            "TREB" : 2,
-            "AST" : 2,
-            "BLK" : 0,
-            "TO" : 0,
-            "STL" : 0,
-            "FOL" : 4,
-            "MINS" : 16.07,
-            "EFF" : 6
-        ]
-        
-        documentsToWrite += 1
-        database.collection(playerGameStatsDocumentID).document(playerGameStatsData["gameID"] as! String).setData(playerStatsData) { (error) in
-            if let error = error {
-                print("Error writing document: \(error)")
-                completion(error)
-                return
-            } else {
-                completedDocuments += 1
-                print("Document successfully written!")
-            }
-        }
-        
-        for i in 1...14 {
-            let zoneData : [String : Any] = [
-                "zoneNumber" : i,
-                "FGA" : 0,
-                "FGM" : 0,
-                "FG%" : 0.0,
-                "PTS" : 0
-            ]
-            
-            let zoneName = "Zone-\(i)"
-            documentsToWrite += 1
-            let playerZoneID = "\(playerGameStatsDocumentID)/\(playerGameStatsData["gameID"] as! String)/StatsPerZone"
-            database.collection(playerZoneID).document(zoneName).setData(zoneData) { error in
-                if let error = error {
-                    print("Error writing document: \(error)")
-                    completion(error)
-                    return
-                } else {
-                    completedDocuments += 1
-                    print("Document successfully written!")
-                }
-            }
-        }
-        
-        playerData = [
-            "firstName" : "Ahmed",
-            "lastName" : "Rabei",
-            "nickname" : "Ahmed Rabei",
-            "primaryPosition" : 4,
-            "secondaryPosition" : 0,
-            "jerseyNo" : "12",
-            "height" : 195,
-            "weight" : 92,
-            "nationality" : "Egyptian",
-            "dateOfBirth" : Timestamp(date: dateFormatter.date(from: "1/1/1987")!),
-            "hometown" : "Alexandria, Egypt",
-            "avatar": ""
-        ]
-        
-        playersDocumentID = "\(teamDocumentID)/Players"
-        
-        documentsToWrite += 1
-        
-        playerRef = database.collection(playersDocumentID).addDocument(data: playerData) { (error) in
-            if let error = error {
-                print("Error writing document: \(error)")
-                completion(error)
-                return
-            } else {
-                completedDocuments += 1
-                print("Document successfully written!")
-            }
-        }
-        
-        playerStatsDocumentID = "\(playersDocumentID)/\(playerRef!.documentID)/PlayerStats"
-        
-        playerStatsData = [
-            "gamesPlayed" : 1,
-            "3FGA" : 2,
-            "3FGM" : 1,
-            "3FG%" : 0.5,
-            "2FGA" : 10,
-            "2FGM" : 6,
-            "2FG%" : 0.6,
-            "FGA" : 12,
-            "FGM" : 7,
-            "FG%" : 0.58,
-            "FTA" : 1,
-            "FTM" : 1,
-            "FT%" : 1.0,
-            "PTS" : 16,
-            "ORB" : 3,
-            "DRB" : 3,
-            "TREB" : 6,
-            "AST" : 2,
-            "BLK" : 0,
-            "TO" : 3,
-            "STL" : 0,
-            "FOL" : 4,
-            "MINS" : 34.03,
-            "EFF" : 16
-        ]
-        
-        documentsToWrite += 1
-        database.collection(playerStatsDocumentID).document(currentSeason).setData(playerStatsData) { (error) in
-            if let error = error {
-                print("Error writing document: \(error)")
-                completion(error)
-                return
-            } else {
-                completedDocuments += 1
-                print("Document successfully written!")
-            }
-        }
-        
-        for i in 1...14 {
-            let zoneData : [String : Any] = [
-                "zoneNumber" : i,
-                "FGA" : 0,
-                "FGM" : 0,
-                "FG%" : 0.0,
-                "PTS" : 0
-            ]
-            
-            let zoneName = "Zone-\(i)"
-            documentsToWrite += 1
-            database.collection("\(playerStatsDocumentID)/\(currentSeason)/StatsPerZone").document(zoneName).setData(zoneData) { error in
-                if let error = error {
-                    print("Error writing document: \(error)")
-                    completion(error)
-                    return
-                } else {
-                    completedDocuments += 1
-                    print("Document successfully written!")
-                }
-            }
-        }
-        
-        playerGameStatsDocumentID = "\(playersDocumentID)/\(playerRef!.documentID)/PlayerGameStats"
-        
-        playerGameStatsData = [
-            "gameID" : "HOCvsSUNS_27-2-2019",
-            "opponentName" : "Shams",
-            "3FGA" : 2,
-            "3FGM" : 1,
-            "3FG%" : 0.5,
-            "2FGA" : 10,
-            "2FGM" : 6,
-            "2FG%" : 0.6,
-            "FGA" : 12,
-            "FGM" : 7,
-            "FG%" : 0.58,
-            "FTA" : 1,
-            "FTM" : 1,
-            "FT%" : 1.0,
-            "PTS" : 16,
-            "ORB" : 3,
-            "DRB" : 3,
-            "TREB" : 6,
-            "AST" : 2,
-            "BLK" : 0,
-            "TO" : 3,
-            "STL" : 0,
-            "FOL" : 4,
-            "MINS" : 34.03,
-            "EFF" : 16
-        ]
-        
-        documentsToWrite += 1
-        database.collection(playerGameStatsDocumentID).document(playerGameStatsData["gameID"] as! String).setData(playerStatsData) { (error) in
-            if let error = error {
-                print("Error writing document: \(error)")
-                completion(error)
-                return
-            } else {
-                completedDocuments += 1
-                print("Document successfully written!")
-            }
-        }
-        
-        for i in 1...14 {
-            let zoneData : [String : Any] = [
-                "zoneNumber" : i,
-                "FGA" : 0,
-                "FGM" : 0,
-                "FG%" : 0.0,
-                "PTS" : 0
-            ]
-            
-            let zoneName = "Zone-\(i)"
-            documentsToWrite += 1
-            let playerZoneID = "\(playerGameStatsDocumentID)/\(playerGameStatsData["gameID"] as! String)/StatsPerZone"
-            database.collection(playerZoneID).document(zoneName).setData(zoneData) { error in
-                if let error = error {
-                    print("Error writing document: \(error)")
-                    completion(error)
-                    return
-                } else {
-                    completedDocuments += 1
-                    print("Document successfully written!")
-                }
-            }
-        }
-        
-        playerData = [
-            "firstName" : "Karim",
-            "lastName" : "Shamseya",
-            "nickname" : "Karim Shamseya",
-            "primaryPosition" : 4,
-            "secondaryPosition" : 5,
-            "jerseyNo" : "15",
-            "height" : 201,
-            "weight" : 98,
-            "nationality" : "Egyptian",
-            "dateOfBirth" : Timestamp(date: dateFormatter.date(from: "1/1/1983")!),
-            "hometown" : "Alexandria, Egypt",
-            "avatar": ""
-        ]
-        
-        playersDocumentID = "\(teamDocumentID)/Players"
-        
-        documentsToWrite += 1
-        
-        playerRef = database.collection(playersDocumentID).addDocument(data: playerData) { (error) in
-            if let error = error {
-                print("Error writing document: \(error)")
-                completion(error)
-                return
-            } else {
-                completedDocuments += 1
-                print("Document successfully written!")
-            }
-        }
-        
-        playerStatsDocumentID = "\(playersDocumentID)/\(playerRef!.documentID)/PlayerStats"
-        
-        playerStatsData = [
-            "gamesPlayed" : 0,
-            "3FGA" : 0,
-            "3FGM" : 0,
-            "3FG%" : 0,
-            "2FGA" : 0,
-            "2FGM" : 0,
-            "2FG%" : 0.0,
-            "FGA" : 0,
-            "FGM" : 0,
-            "FG%" : 0.0,
-            "FTA" : 0,
-            "FTM" : 0,
-            "FT%" : 0.0,
-            "PTS" : 0,
-            "ORB" : 0,
-            "DRB" : 0,
-            "TREB" : 0,
-            "AST" : 0,
-            "BLK" : 0,
-            "TO" : 0,
-            "STL" : 0,
-            "FOL" : 0,
-            "MINS" : 0.0,
-            "EFF" : 0
-        ]
-        
-        documentsToWrite += 1
-        database.collection(playerStatsDocumentID).document(currentSeason).setData(playerStatsData) { (error) in
-            if let error = error {
-                print("Error writing document: \(error)")
-                completion(error)
-                return
-            } else {
-                completedDocuments += 1
-                print("Document successfully written!")
-            }
-        }
-        
-        for i in 1...14 {
-            let zoneData : [String : Any] = [
-                "zoneNumber" : i,
-                "FGA" : 0,
-                "FGM" : 0,
-                "FG%" : 0.0,
-                "PTS" : 0
-            ]
-            
-            let zoneName = "Zone-\(i)"
-            documentsToWrite += 1
-            database.collection("\(playerStatsDocumentID)/\(currentSeason)/StatsPerZone").document(zoneName).setData(zoneData) { error in
-                if let error = error {
-                    print("Error writing document: \(error)")
-                    completion(error)
-                    return
-                } else {
-                    completedDocuments += 1
-                    print("Document successfully written!")
-                }
-            }
-        }
-        
-        playerData = [
-            "firstName" : "Mohamed",
-            "lastName" : "Younes",
-            "nickname" : "Mohamed Younes",
-            "primaryPosition" : 5,
-            "secondaryPosition" : 4,
-            "jerseyNo" : "33",
-            "height" : 200,
-            "weight" : 99,
-            "nationality" : "Egyptian",
-            "dateOfBirth" : Timestamp(date: dateFormatter.date(from: "1/1/1985")!),
-            "hometown" : "Alexandria, Egypt",
-            "avatar": ""
-        ]
-        
-        playersDocumentID = "\(teamDocumentID)/Players"
-        
-        documentsToWrite += 1
-        
-        playerRef = database.collection(playersDocumentID).addDocument(data: playerData) { (error) in
-            if let error = error {
-                print("Error writing document: \(error)")
-                completion(error)
-                return
-            } else {
-                completedDocuments += 1
-                print("Document successfully written!")
-            }
-        }
-        
-        playerStatsDocumentID = "\(playersDocumentID)/\(playerRef!.documentID)/PlayerStats"
-        
-        playerStatsData = [
-            "gamesPlayed" : 1,
-            "3FGA" : 0,
-            "3FGM" : 0,
-            "3FG%" : 0.0,
-            "2FGA" : 5,
-            "2FGM" : 2,
-            "2FG%" : 0.4,
-            "FGA" : 5,
-            "FGM" : 2,
-            "FG%" : 0.4,
-            "FTA" : 9,
-            "FTM" : 4,
-            "FT%" : 0.44,
-            "PTS" : 8,
-            "ORB" : 3,
-            "DRB" : 5,
-            "TREB" : 8,
-            "AST" : 3,
-            "BLK" : 1,
-            "TO" : 3,
-            "STL" : 0,
-            "FOL" : 3,
-            "MINS" : 19.03,
-            "EFF" : 9
-        ]
-        
-        documentsToWrite += 1
-        database.collection(playerStatsDocumentID).document(currentSeason).setData(playerStatsData) { (error) in
-            if let error = error {
-                print("Error writing document: \(error)")
-                completion(error)
-                return
-            } else {
-                completedDocuments += 1
-                print("Document successfully written!")
-            }
-        }
-        
-        for i in 1...14 {
-            let zoneData : [String : Any] = [
-                "zoneNumber" : i,
-                "FGA" : 0,
-                "FGM" : 0,
-                "FG%" : 0.0,
-                "PTS" : 0
-            ]
-            
-            let zoneName = "Zone-\(i)"
-            documentsToWrite += 1
-            database.collection("\(playerStatsDocumentID)/\(currentSeason)/StatsPerZone").document(zoneName).setData(zoneData) { error in
-                if let error = error {
-                    print("Error writing document: \(error)")
-                    completion(error)
-                    return
-                } else {
-                    completedDocuments += 1
-                    print("Document successfully written!")
-                }
-            }
-        }
-        
-        playerGameStatsDocumentID = "\(playersDocumentID)/\(playerRef!.documentID)/PlayerGameStats"
-        
-        playerGameStatsData = [
-            "gameID" : "HOCvsSUNS_27-2-2019",
-            "opponentName" : "Shams",
-            "3FGA" : 0,
-            "3FGM" : 0,
-            "3FG%" : 0.0,
-            "2FGA" : 5,
-            "2FGM" : 2,
-            "2FG%" : 0.4,
-            "FGA" : 5,
-            "FGM" : 2,
-            "FG%" : 0.4,
-            "FTA" : 9,
-            "FTM" : 4,
-            "FT%" : 0.44,
-            "PTS" : 8,
-            "ORB" : 3,
-            "DRB" : 5,
-            "TREB" : 8,
-            "AST" : 3,
-            "BLK" : 1,
-            "TO" : 3,
-            "STL" : 0,
-            "FOL" : 3,
-            "MINS" : 19.03,
-            "EFF" : 9
-        ]
-        
-        documentsToWrite += 1
-        database.collection(playerGameStatsDocumentID).document(playerGameStatsData["gameID"] as! String).setData(playerStatsData) { (error) in
-            if let error = error {
-                print("Error writing document: \(error)")
-                completion(error)
-                return
-            } else {
-                completedDocuments += 1
-                print("Document successfully written!")
-            }
-        }
-        
-        for i in 1...14 {
-            let zoneData : [String : Any] = [
-                "zoneNumber" : i,
-                "FGA" : 0,
-                "FGM" : 0,
-                "FG%" : 0.0,
-                "PTS" : 0
-            ]
-            
-            let zoneName = "Zone-\(i)"
-            documentsToWrite += 1
-            let playerZoneID = "\(playerGameStatsDocumentID)/\(playerGameStatsData["gameID"] as! String)/StatsPerZone"
-            database.collection(playerZoneID).document(zoneName).setData(zoneData) { error in
-                if let error = error {
-                    print("Error writing document: \(error)")
-                    completion(error)
-                    return
-                } else {
-                    completedDocuments += 1
-                    print("Document successfully written!")
-                }
-            }
-        }
-        
-        playerData = [
-            "firstName" : "Ahmed",
-            "lastName" : "Seddik",
-            "nickname" : "Ahmed Seddik",
-            "primaryPosition" : 5,
-            "secondaryPosition" : 0,
-            "jerseyNo" : "21",
-            "height" : 205,
-            "weight" : 104,
-            "nationality" : "Egyptian",
-            "dateOfBirth" : Timestamp(date: dateFormatter.date(from: "1/1/1983")!),
-            "hometown" : "Alexandria, Egypt",
-            "avatar": ""
-        ]
-        
-        playersDocumentID = "\(teamDocumentID)/Players"
-        
-        documentsToWrite += 1
-        
-        playerRef = database.collection(playersDocumentID).addDocument(data: playerData) { (error) in
-            if let error = error {
-                print("Error writing document: \(error)")
-                completion(error)
-                return
-            } else {
-                completedDocuments += 1
-                print("Document successfully written!")
-            }
-        }
-        
-        playerStatsDocumentID = "\(playersDocumentID)/\(playerRef!.documentID)/PlayerStats"
-        
-        playerStatsData = [
-            "gamesPlayed" : 1,
-            "3FGA" : 1,
-            "3FGM" : 0,
-            "3FG%" : 0.0,
-            "2FGA" : 1,
-            "2FGM" : 1,
-            "2FG%" : 1.0,
-            "FGA" : 2,
-            "FGM" : 1,
-            "FG%" : 0.5,
-            "FTA" : 0,
-            "FTM" : 0,
-            "FT%" : 0.0,
-            "PTS" : 2,
-            "ORB" : 2,
-            "DRB" : 0,
-            "TREB" : 2,
-            "AST" : 0,
-            "BLK" : 0,
-            "TO" : 0,
-            "STL" : 0,
-            "FOL" : 1,
-            "MINS" : 9.4,
-            "EFF" : 3
-        ]
-        
-        documentsToWrite += 1
-        database.collection(playerStatsDocumentID).document(currentSeason).setData(playerStatsData) { (error) in
-            if let error = error {
-                print("Error writing document: \(error)")
-                completion(error)
-                return
-            } else {
-                completedDocuments += 1
-                print("Document successfully written!")
-            }
-        }
-        
-        for i in 1...14 {
-            let zoneData : [String : Any] = [
-                "zoneNumber" : i,
-                "FGA" : 0,
-                "FGM" : 0,
-                "FG%" : 0.0,
-                "PTS" : 0
-            ]
-            
-            let zoneName = "Zone-\(i)"
-            documentsToWrite += 1
-            database.collection("\(playerStatsDocumentID)/\(currentSeason)/StatsPerZone").document(zoneName).setData(zoneData) { error in
-                if let error = error {
-                    print("Error writing document: \(error)")
-                    completion(error)
-                    return
-                } else {
-                    completedDocuments += 1
-                    print("Document successfully written!")
-                }
-            }
-        }
-        
-        playerGameStatsDocumentID = "\(playersDocumentID)/\(playerRef!.documentID)/PlayerGameStats"
-        
-        playerGameStatsData = [
-            "gameID" : "HOCvsSUNS_27-2-2019",
-            "opponentName" : "Shams",
-            "3FGA" : 1,
-            "3FGM" : 0,
-            "3FG%" : 0.0,
-            "2FGA" : 1,
-            "2FGM" : 1,
-            "2FG%" : 1.0,
-            "FGA" : 2,
-            "FGM" : 1,
-            "FG%" : 0.5,
-            "FTA" : 0,
-            "FTM" : 0,
-            "FT%" : 0.0,
-            "PTS" : 2,
-            "ORB" : 2,
-            "DRB" : 0,
-            "TREB" : 2,
-            "AST" : 0,
-            "BLK" : 0,
-            "TO" : 0,
-            "STL" : 0,
-            "FOL" : 1,
-            "MINS" : 9.4,
-            "EFF" : 3
-        ]
-        
-        documentsToWrite += 1
-        database.collection(playerGameStatsDocumentID).document(playerGameStatsData["gameID"] as! String).setData(playerStatsData) { (error) in
-            if let error = error {
-                print("Error writing document: \(error)")
-                completion(error)
-                return
-            } else {
-                completedDocuments += 1
-                print("Document successfully written!")
-            }
-        }
-        
-        for i in 1...14 {
-            let zoneData : [String : Any] = [
-                "zoneNumber" : i,
-                "FGA" : 0,
-                "FGM" : 0,
-                "FG%" : 0.0,
-                "PTS" : 0
-            ]
-            
-            let zoneName = "Zone-\(i)"
-            documentsToWrite += 1
-            let playerZoneID = "\(playerGameStatsDocumentID)/\(playerGameStatsData["gameID"] as! String)/StatsPerZone"
-            database.collection(playerZoneID).document(zoneName).setData(zoneData) { error in
-                if let error = error {
-                    print("Error writing document: \(error)")
-                    completion(error)
-                    return
-                } else {
-                    completedDocuments += 1
-                    print("Document successfully written!")
-                }
-            }
-        }
-        
-        playerData = [
-            "firstName" : "Mohamed",
-            "lastName" : "El-Kony",
-            "nickname" : "Mohamed El-Kony",
-            "primaryPosition" : 5,
-            "secondaryPosition" : 0,
-            "jerseyNo" : "14",
-            "height" : 205,
-            "weight" : 102,
-            "nationality" : "Egyptian",
-            "dateOfBirth" : Timestamp(date: dateFormatter.date(from: "1/1/1982")!),
-            "hometown" : "Damanhour, Egypt",
-            "avatar": ""
-        ]
-        
-        playersDocumentID = "\(teamDocumentID)/Players"
-        
-        documentsToWrite += 1
-        
-        playerRef = database.collection(playersDocumentID).addDocument(data: playerData) { (error) in
-            if let error = error {
-                print("Error writing document: \(error)")
-                completion(error)
-                return
-            } else {
-                completedDocuments += 1
-                print("Document successfully written!")
-            }
-        }
-        
-        playerStatsDocumentID = "\(playersDocumentID)/\(playerRef!.documentID)/PlayerStats"
-        
-        playerStatsData = [
-            "gamesPlayed" : 0,
-            "3FGA" : 0,
-            "3FGM" : 0,
-            "3FG%" : 0,
-            "2FGA" : 0,
-            "2FGM" : 0,
-            "2FG%" : 0.0,
-            "FGA" : 0,
-            "FGM" : 0,
-            "FG%" : 0.0,
-            "FTA" : 0,
-            "FTM" : 0,
-            "FT%" : 0.0,
-            "PTS" : 0,
-            "ORB" : 0,
-            "DRB" : 0,
-            "TREB" : 0,
-            "AST" : 0,
-            "BLK" : 0,
-            "TO" : 0,
-            "STL" : 0,
-            "FOL" : 0,
-            "MINS" : 0.0,
-            "EFF" : 0
-        ]
-        
-        documentsToWrite += 1
-        database.collection(playerStatsDocumentID).document(currentSeason).setData(playerStatsData) { (error) in
-            if let error = error {
-                print("Error writing document: \(error)")
-                completion(error)
-                return
-            } else {
-                completedDocuments += 1
-                print("Document successfully written!")
-            }
-        }
-        
-        for i in 1...14 {
-            let zoneData : [String : Any] = [
-                "zoneNumber" : i,
-                "FGA" : 0,
-                "FGM" : 0,
-                "FG%" : 0.0,
-                "PTS" : 0
-            ]
-            
-            let zoneName = "Zone-\(i)"
-            documentsToWrite += 1
-            database.collection("\(playerStatsDocumentID)/\(currentSeason)/StatsPerZone").document(zoneName).setData(zoneData) { error in
-                if let error = error {
-                    print("Error writing document: \(error)")
-                    completion(error)
-                    return
-                } else {
-                    completedDocuments += 1
-                    print("Document successfully written!")
-                    if(completedDocuments == documentsToWrite) {
-                        print("Added Documents Successfully: \(completedDocuments)/\(documentsToWrite)")
+                    print("Added Playoff Round \(i)")
+                    if i == 8 {
                         completion(nil)
                     }
                 }
@@ -2552,31 +874,440 @@ class DatabaseManager {
         }
     }
     
-    func getPlayers(forTeam collection : String, completion: @escaping (Error?, [Player]?) -> Void) {
-        
-        var players = [Player]()
-        
-        let playersRef = database.collection("\(collection)/Players")
-            .order(by: "primaryPosition")
-            .order(by: "secondaryPosition")
-        
-        playersRef.getDocuments { (playerQuerySnapshot, error) in
+    func updateTeamStats(completion: @escaping (Error?) -> Void) {
+        var count = 0
+        database.collectionGroup("TeamStats").getDocuments { (stats, error) in
             if let error = error {
-                print("Error Fetching Players: \(error)")
-                completion(error, nil)
+                completion(error)
             } else {
-                for playerDocument in playerQuerySnapshot!.documents {
-                    let totalStatsRef = self.database.collection("\(collection)/Players/\(playerDocument.documentID)/PlayerStats")
-                    totalStatsRef.getDocuments(completion: { (statsQuerySnapshot, error) in
+                for stat in stats!.documents {
+                    var data = stat.data()
+                    
+                    data["team"] = (stat.reference.parent.parent!.documentID)
+                    
+                    stat.reference.setData(data, completion: { (error) in
                         if let error = error {
-                            completion(error, nil)
+                            completion(error)
                         } else {
-                            for statsDocument in statsQuerySnapshot!.documents {
-                                let player = Player(playerDocument: playerDocument, playerStatsDocument: statsDocument)
-                                players.append(player)
+                            count += 1
+                            if(count == stats!.count) {
+                                completion(nil)
                             }
-                            if (players.count == playerQuerySnapshot!.documents.count) {
-                                completion(nil, players)
+                        }
+                    })
+                }
+            }
+        }
+    }
+    
+    func removeFieldFromTeam(completion: @escaping (Error?) -> Void) {
+        var count = 0
+        database.collection("Teams").getDocuments { (snapshot, error) in
+            if let error = error {
+                completion(error)
+            } else {
+                for team in snapshot!.documents {
+                    var data = team.data()
+                    data.removeValue(forKey: "wins")
+                    data.removeValue(forKey: "losses")
+                    data.removeValue(forKey: "leagueStanding")
+                    
+                    self.database.collection("Teams").document(team.documentID).setData(data, completion: { (error) in
+                        if let error = error {
+                            completion(error)
+                        } else {
+                            count += 1
+                            if(count == snapshot!.count) {
+                                completion(nil)
+                            }
+                        }
+                    })
+                }
+            }
+        }
+    }
+    
+    func deletePlayerNicknameField(completion: @escaping (Error?) -> Void) {
+        var totalCount = 0
+        var completed = 0
+        
+        database.collection("Players").getDocuments { (players, error) in
+            if let error = error {
+                completion(error)
+            } else {
+                totalCount = players!.count
+                for player in players!.documents {
+                    self.database.collection("Players").document(player.documentID).updateData(["avatar" : FieldValue.delete()], completion: { (error) in
+                        if let error = error {
+                            completion(error)
+                        } else {
+                            completed += 1
+                            print("Deleted Avatar from Player \(completed)/\(totalCount)")
+                            if(completed == totalCount) {
+                                completion(nil)
+                            }
+                        }
+                    })
+                }
+            }
+        }
+    }
+    
+    func addAssociatedLeagueStandings(completion: @escaping (Error?) -> Void) {
+        let round = ["Group Stage", "Round of 16", "Quarter Finals", "Semi Finals", "Final Round"]
+        var count = 0
+        for i in 1...round.count {
+            let data : [String:Any] = [
+                "isCurrentStage" : i == 1 ? true : false,
+                "isPreviousStage" : false,
+                "isGroupStage" : i == 1 || i == round.count ? true : false,
+                "isPlayoffRound" : i != 1 && i != round.count ? true : false,
+                "stage" : i,
+                "stageName" : round[i-1],
+                "league" : "Associated League"
+            ]
+            database.collection("Standings").addDocument(data: data) { (error) in
+                if let error = error {
+                    completion(error)
+                } else {
+                    count += 1
+                    print("Add Round: \(round[i-1])")
+                    if count == round.count {
+                        completion(nil)
+                    }
+                }
+            }
+        }
+    }
+    
+    func addTeamStandings(completion: @escaping (Error?) -> Void) {
+        var count = 0
+        database.collection("Teams").getDocuments(source: .cache) { (snapshot, error) in
+            if let error = error {
+                completion(error)
+            } else {
+                for team in snapshot!.documents {
+                    var group = 0
+                    var current = 0
+                    let abb = team.get("abb") as! String
+                    switch abb {
+                    case "ZAM":
+                        group = 0
+                        current = 1
+                    case "INS":
+                        group = 0
+                        current = 2
+                    case "TAN":
+                        group = 0
+                        current = 3
+                    case "GEZ":
+                        group = 1
+                        current = 1
+                    case "SMO":
+                        group = 1
+                        current = 2
+                    case "TEL":
+                        group = 1
+                        current = 3
+                    case "ITT":
+                        group = 2
+                        current = 1
+                    case "ARM":
+                        group = 2
+                        current = 2
+                    case "OLY":
+                        group = 2
+                        current = 3
+                    case "SHA":
+                        group = 2
+                        current = 4
+                    case "AHL":
+                        group = 3
+                        current = 1
+                    case "ASC":
+                        group = 3
+                        current = 2
+                    case "HOC":
+                        group = 3
+                        current = 3
+                    case "SUE":
+                        group = 3
+                        current = 4
+                    default:
+                        group = current
+                    }
+                    let data : [String:Any] = [
+                        "PTS" : [
+                            "men" : 0,
+                            "u16" : 0,
+                            "total" : 0
+                        ],
+                        "group" : group,
+                        "wins" : 0,
+                        "losses" : 0,
+                        "ranking" : [
+                            "current" : current,
+                            "previous" : current
+                        ],
+                        "scoreDifference" : [
+                            "men" : 0,
+                            "u16" : 0
+                        ]
+                    ]
+                    self.database.collection("Standings/vP3dKvS20HuQMERQpqz9/GroupStandings").document(team.documentID).setData(data, completion: { (error) in
+                        if let error = error {
+                            completion(error)
+                        } else {
+                            print("Added \(team.documentID) Standings!")
+                            count += 1
+                            if(count == snapshot!.count) {
+                                completion(nil)
+                            }
+                        }
+                    })
+
+                }
+            }
+        }
+    }
+    
+    func testCollectionGroup(completion: @escaping (Error?) -> Void) {
+        let query = database.collectionGroup("PlayerStats")
+            .whereField("season", isEqualTo: currentSeason)
+            .order(by: "PTS.perGame", descending: true)
+//            .limit(to: 60)
+        
+        let start = DispatchTime.now()
+        var count = 0
+        query.getDocuments { (statistics, error) in
+            if let error = error {
+                completion(error)
+            } else {
+                for stat in statistics!.documents {
+                    let playerRef = String(stat.reference.path.split(separator: "/")[1])
+                    self.database.collection("Players").document(playerRef).getDocument(source: .cache, completion: { (player, error) in
+                        if let error = error {
+                            completion(error)
+                        } else {
+                            let firstName = player!.get("name.first") as! String
+                            let secondName = player!.get("name.last") as! String
+                            let points = stat.get("PTS.perGame") as! Double
+                            
+                            print()
+                            print("\(firstName) \(secondName): \(points)")
+                            count += 1
+                            
+                            if count == statistics!.count {
+                                let end = DispatchTime.now()
+                                let difference = end.uptimeNanoseconds - start.uptimeNanoseconds
+                                print("Completed in \(Double(difference) / 1_000_000_000) seconds.")
+                                completion(nil)
+                            }
+                        }
+                    })
+                }
+                completion(nil)
+            }
+        }
+    }
+    
+    func addPlayerStatsCollection(completion: @escaping (Error?) -> Void) {
+        var totalCount = 0
+        var completed = 0
+        let teamsRef = database.collection("Teams")
+        teamsRef.getDocuments { (teams, error) in
+            if let error = error {
+                completion(error)
+            } else {
+                for team in teams!.documents {
+                    let playersRef = team.reference.collection("Players")
+                    playersRef.getDocuments(completion: { (players, error) in
+                        if let error = error {
+                            completion(error)
+                        } else {
+                            totalCount += players!.count
+                            for player in players!.documents {
+                                let statsRef = player.reference.collection("PlayerStats")
+                                statsRef.document("18-19").getDocument(completion: { (statsDocument, error) in
+                                    if let error = error {
+                                        completion(error)
+                                    } else {
+                                       let resultRef = self.database.collection("Players/\(player.documentID)/PlayerStats")
+                                        var data = statsDocument!.data()
+                                        data!["season"] = "18-19"
+                                        data!["2FG"] = [
+                                            "attempts" : data!["2FGA"],
+                                            "made" : data!["2FGM"],
+                                            "percentage" : data!["2FG%"]
+                                        ]
+                                        data!.removeValue(forKey: "2FGA")
+                                        data!.removeValue(forKey: "2FGM")
+                                        data!.removeValue(forKey: "2FG%")
+                                        data!["3FG"] = [
+                                            "attempts" : data!["3FGA"],
+                                            "made" : data!["3FGM"],
+                                            "percentage" : data!["3FG%"]
+                                        ]
+                                        data!.removeValue(forKey: "3FGA")
+                                        data!.removeValue(forKey: "3FGM")
+                                        data!.removeValue(forKey: "3FG%")
+                                        data!["FG"] = [
+                                            "attempts" : data!["FGA"],
+                                            "made" : data!["FGM"],
+                                            "percentage" : data!["FG%"]
+                                        ]
+                                        data!.removeValue(forKey: "FGA")
+                                        data!.removeValue(forKey: "FGM")
+                                        data!.removeValue(forKey: "FG%")
+                                        data!["FT"] = [
+                                            "attempts" : data!["FTA"],
+                                            "made" : data!["FTM"],
+                                            "percentage" : data!["FT%"]
+                                        ]
+                                        data!.removeValue(forKey: "FTA")
+                                        data!.removeValue(forKey: "FTM")
+                                        data!.removeValue(forKey: "FT%")
+                                        
+                                        data!["REB"] = [
+                                            "offensive" : [
+                                                "total" : data!["ORB"],
+                                                "perGame" : ((data!["ORB"] as! Double)/(data!["gamesPlayed"] as! Double)).isNaN ? 0.0 : ((data!["ORB"] as! Double)/(data!["gamesPlayed"] as! Double))
+                                            ],
+                                            "defensive" : [
+                                                "total" : data!["DRB"],
+                                                "perGame" : ((data!["DRB"] as! Double)/(data!["gamesPlayed"] as! Double)).isNaN ? 0.0 : ((data!["DRB"] as! Double)/(data!["gamesPlayed"] as! Double))
+                                            ],
+                                            "total" : data!["TREB"],
+                                            "perGame" : ((data!["TREB"] as! Double)/(data!["gamesPlayed"] as! Double)).isNaN ? 0.0 : ((data!["TREB"] as! Double)/(data!["gamesPlayed"] as! Double))
+                                        ]
+                                        data!.removeValue(forKey: "ORB")
+                                        data!.removeValue(forKey: "DRB")
+                                        data!.removeValue(forKey: "TREB")
+                                        
+                                        data!["PTS"] = [
+                                            "total" : data!["PTS"],
+                                            "perGame" : ((data!["PTS"] as! Double)/(data!["gamesPlayed"] as! Double)).isNaN ? 0.0 : ((data!["PTS"] as! Double)/(data!["gamesPlayed"] as! Double))
+                                        ]
+                                        
+                                        data!["AST"] = [
+                                            "total" : data!["AST"],
+                                            "perGame" : ((data!["AST"] as! Double)/(data!["gamesPlayed"] as! Double)).isNaN ? 0.0 : ((data!["AST"] as! Double)/(data!["gamesPlayed"] as! Double))
+                                        ]
+                                        
+                                        data!["STL"] = [
+                                            "total" : data!["STL"],
+                                            "perGame" : ((data!["STL"] as! Double)/(data!["gamesPlayed"] as! Double)).isNaN ? 0.0 : ((data!["STL"] as! Double)/(data!["gamesPlayed"] as! Double))
+                                        ]
+                                        
+                                        data!["TO"] = [
+                                            "total" : data!["TO"],
+                                            "perGame" : ((data!["TO"] as! Double)/(data!["gamesPlayed"] as! Double)).isNaN ? 0.0 : ((data!["TO"] as! Double)/(data!["gamesPlayed"] as! Double))
+                                        ]
+                                        
+                                        data!["BLK"] = [
+                                            "total" : data!["BLK"],
+                                            "perGame" : ((data!["BLK"] as! Double)/(data!["gamesPlayed"] as! Double)).isNaN ? 0.0 : ((data!["BLK"] as! Double)/(data!["gamesPlayed"] as! Double))
+                                        ]
+                                        
+                                        data!["EFF"] = [
+                                            "total" : data!["EFF"],
+                                            "perGame" : ((data!["EFF"] as! Double)/(data!["gamesPlayed"] as! Double)).isNaN ? 0.0 : ((data!["EFF"] as! Double)/(data!["gamesPlayed"] as! Double))
+                                        ]
+                                        
+                                        data!["MINS"] = [
+                                            "total" : data!["MINS"],
+                                            "perGame" : ((data!["MINS"] as! Double)/(data!["gamesPlayed"] as! Double)).isNaN ? 0.0 : ((data!["MINS"] as! Double)/(data!["gamesPlayed"] as! Double))
+                                        ]
+                                        
+                                        data!["FOL"] = [
+                                            "total" : data!["FOL"],
+                                            "perGame" : ((data!["FOL"] as! Double)/(data!["gamesPlayed"] as! Double)).isNaN ? 0.0 : ((data!["FOL"] as! Double)/(data!["gamesPlayed"] as! Double))
+                                        ]
+                                        
+                                        resultRef.document("18-19").setData(data!, completion: { (error) in
+                                            if let error = error {
+                                                completion(error)
+                                            } else {
+                                                completed += 1
+                                                print("Added Player Stats \(completed)/\(totalCount)")
+                                                if(completed == totalCount) {
+                                                    completion(nil)
+                                                }
+                                            }
+                                        })
+//                                        resultRef.document("18-19").delete(completion: { (error) in
+//                                            if let error = error {
+//                                                completion(error)
+//                                            } else {
+//                                                completed += 1
+//                                                print("Deleted Player Stats \(completed)/\(totalCount)")
+//                                                if(completed == totalCount) {
+//                                                    completion(nil)
+//                                                }
+//                                            }
+//                                        })
+                                    }
+                                })
+                            }
+                        }
+                    })
+                }
+            }
+        }
+    }
+    
+    func createAllPlayersCollection(completion: @escaping (Error?) -> Void) {
+        var totalCount = 0
+        var completed = 0
+        database.collection("Teams").getDocuments { (teams, error) in
+            if let error = error {
+                completion(error)
+            } else {
+                for team in teams!.documents {
+                    self.database.collection("Teams/\(team.documentID)/Players").getDocuments(completion: { (players, error) in
+                        if let error = error {
+                            completion(error)
+                        } else {
+                            totalCount += players!.count
+                            for player in players!.documents {
+                                var data = player.data()
+                                data["currentTeam"] = team.get("abb") as! String
+                                let secondary : Any = (data["secondaryPosition"] as! Int) == 0 ? NSNull() : data["secondaryPosition"] as! Int
+                                data["postion"] = [
+                                    "primary" : data["primaryPosition"] as! Int,
+                                    "secondary" : secondary
+                                ]
+                                data["name"] = [
+                                    "first" : data["firstName"] as! String,
+                                    "last" : data["lastName"] as! String,
+                                    "nickname" : [
+                                        "first" : NSNull(),
+                                        "last" : NSNull()
+                                    ]
+                                ]
+                                data["biometrics"] = [
+                                    "height" : data["height"] as! Int,
+                                    "weight" : data["weight"] as! Int
+                                ]
+                                data.removeValue(forKey: "primaryPosition")
+                                data.removeValue(forKey: "secondaryPosition")
+                                data.removeValue(forKey: "avatar")
+                                data.removeValue(forKey: "firstName")
+                                data.removeValue(forKey: "lastName")
+                                data.removeValue(forKey: "height")
+                                data.removeValue(forKey: "weight")
+                                data.removeValue(forKey: "nickname")
+                                self.database.collection("Players").document(player.documentID).setData(data, completion: { (error) in
+                                    if let error = error {
+                                        completion(error)
+                                    } else {
+                                        completed += 1
+                                        print("Added Player \(completed)/\(totalCount)")
+                                        if(completed == totalCount) {
+                                            completion(nil)
+                                        }
+                                    }
+                                })
                             }
                         }
                     })
@@ -2594,7 +1325,7 @@ class DatabaseManager {
                     if let error = error {
                         completion(error, nil)
                     } else {
-                        let team = Team(teamDocument: TeamSnapshot!, teamStatsDocument: TeamStatsSnapshot!)
+                        let team = Team(teamDocument: TeamSnapshot!)
                         completion(nil, team)
                     }
                 })
@@ -2602,142 +1333,59 @@ class DatabaseManager {
         }
     }
     
-    func getTeamGameStats(forTeamRef teamRef: String, completion: @escaping (Error?, Bool?, [TeamGameStats]?) -> Void) {
-        let teamGamesRef = database.collection("\(teamRef)/TeamGameStats")
-            .order(by: "date")
-        
-        teamGamesRef.getDocuments { (teamGamesSnapshot, error) in
-            if let error = error {
-                completion(error, nil, nil)
-            } else {
-                var result : [TeamGameStats] = []
-                if(teamGamesSnapshot?.count == 0) {
-                    completion(nil, false, nil)
-                } else {
-                    for document in teamGamesSnapshot!.documents {
-                        result.append(TeamGameStats(statsDocument: document))
-                    }
-                    completion(nil, true, result)
-                }
-            }
-        }
-    }
     
-    //MARK: - Persisting Team Images
-    func createPlistFiles(completion: @escaping (Error?) -> Void) {
-        
-        do {
-            try FileManager.default.createDirectory(at: teamImagesPath!, withIntermediateDirectories: true, attributes: nil)
-        } catch let error {
-            print("Error Creating Directory, \(error)")
-            completion(error)
-        }
-        
-        let path = teamImagesPath!.appendingPathComponent("TeamImages.plist")
-        
-        if(!FileManager.default.fileExists(atPath: path.path)){
-            let data : [String: URL] = [:]
-            let dictionary = NSMutableDictionary(dictionary: data)
-            dictionary.write(toFile: path.path, atomically: true)
-        }
-        completion(nil)
-    }
     
-    func downloadTeamImageURLsToLocal(completion: @escaping (Error?) -> Void) {
+    func getStandings(completion: @escaping  (Error?, [String:[TeamDisplayData]]?) -> Void) {
+        let dbTeams = DatabaseManager.sharedInstance.teamsDisplayData
+        var result : [String : [TeamDisplayData]] = [:]
         
-        let path = teamImagesPath!.appendingPathComponent("TeamImages.plist")
-        let dictionary = NSMutableDictionary(contentsOfFile: path.path)!
-
-        let teamsRef = database.collection("/Teams")
-        teamsRef.getDocuments(source: .cache) { (cacheSnapshot, error) in
+        database.document("Standings/\(currentSeason)").getDocument { (snapshot, error) in
             if let error = error {
-                print("Error getting teams refrences")
-                completion(error)
+                completion(error, nil)
             } else {
-                if(cacheSnapshot!.count == 0) {
-                    teamsRef.getDocuments { (snapshot, error) in
-                        if let error = error {
-                            print("Error getting teams refrences")
-                            completion(error)
-                        } else {
-                            var count = 0
-                            for document in snapshot!.documents {
-                                if dictionary[document.documentID] == nil {
-                                    let imageRef = self.storage.reference().child("TeamImages/\(document.documentID).png")
-                                    imageRef.downloadURL { url, error in
-                                        if let error = error {
-                                            count += 1
-                                            print(error)
-                                        } else {
-                                            dictionary.setValue(url!.absoluteString, forKey: document.documentID)
-                                            count += 1
-                                            if(count == snapshot!.count) {
-                                                dictionary.write(toFile: path.path, atomically: true)
-                                                completion(nil)
-                                            }
-                                        }
-                                    }
-                                } else {
-                                    count += 1
-                                    if(count == snapshot!.count) {
-                                        completion(nil)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    var count = 0
-                    for document in cacheSnapshot!.documents {
-                        if dictionary[document.documentID] == nil {
-                            let imageRef = self.storage.reference().child("TeamImages/\(document.documentID).png")
-                            imageRef.downloadURL { url, error in
+                let stage = snapshot!.get("currentStage") as! String
+                snapshot!.reference.collection("Stages/\(stage)/Groups").getDocuments(completion: { (groups, error) in
+                    if let error = error {
+                        completion(error, nil)
+                    } else {
+                        for group in groups!.documents {
+                            let groupName = group.get("groupName") as! String
+                            group.reference.collection("Teams").getDocuments(completion: { (teams, error) in
                                 if let error = error {
-                                    count += 1
-                                    print(error)
+                                    completion(error, nil)
                                 } else {
-                                    dictionary.setValue(url!.absoluteString, forKey: document.documentID)
-                                    count += 1
-                                    if(count == cacheSnapshot!.count) {
-                                        dictionary.write(toFile: path.path, atomically: true)
-                                        completion(nil)
+                                    var teamsResult : [TeamDisplayData] = []
+                                    for team in teams!.documents {
+                                        dbTeams[team.documentID]!.currentStanding = (team.get("current") as! Int)
+                                        dbTeams[team.documentID]!.previousStanding = (team.get("previous") as! Int)
+                                        dbTeams[team.documentID]!.wins = (team.get("win") as! Int)
+                                        dbTeams[team.documentID]!.losses = (team.get("loss") as! Int)
+                                        dbTeams[team.documentID]!.scoreDifference = (team.get("scoreDifference") as! Int)
+                                        teamsResult.append(dbTeams[team.documentID]!)
+                                    }
+                                    result[groupName] = teamsResult
+                                    if(result.count == groups!.count) {
+                                        completion(nil, result)
                                     }
                                 }
-                            }
-                        } else {
-                            count += 1
-                            if(count == cacheSnapshot!.count) {
-                                completion(nil)
-                            }
+                            })
                         }
                     }
-                }
-            }
-        }
-    }
-    
-    func AddTeamImageURLToLocal(team: String) {
-        let path = teamImagesPath!.appendingPathComponent("TeamImages.plist")
-        let dictionary = NSMutableDictionary(contentsOfFile: path.path)!
-        let imageRef = self.storage.reference().child("TeamImages/\(team).png")
-        imageRef.downloadURL { url, error in
-            if let error = error {
-                print(error)
-            } else {
-                dictionary.setValue(url!.absoluteString, forKey: team)
-                dictionary.write(toFile: path.path, atomically: true)
+                })
+                
             }
         }
     }
     
     func getTeamImageURL(teamID : String) -> URL {
+        let teamImagesPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Images")
+
         let path = teamImagesPath!.appendingPathComponent("TeamImages.plist")
         let dictionary = NSMutableDictionary(contentsOfFile: path.path)!
         let URLString = dictionary.value(forKey: teamID) as! String
         return URL(string: URLString)!
     }
     
-    //MARK: - Get Teams Display Info
     func getAllTeamsDisplayData(completion: @escaping (Error?, [TeamDisplayData]?) -> Void) {
         var teams = [TeamDisplayData]()
         
@@ -2768,29 +1416,138 @@ class DatabaseManager {
                 }
             }
         }
-        
     }
-
-    //MARK: - Managing Documents Directory
-    func emptyImagesDirectory(){
-        do {
-            try FileManager.default.removeItem(at: teamImagesPath!)
-        }
-        catch let error {
-            print("Zodiac \(error)")
+    
+    func editPlayerPosition(completion: @escaping (Error?) -> Void) {
+        var count = 0
+        database.collection("Players").getDocuments { (snapshot, error) in
+            if let error = error {
+                completion(error)
+            } else {
+                for document in snapshot!.documents {
+                    var data = document.data()
+                    let position : [String:Any] = data["postion"] as! [String:Any]
+                    data.removeValue(forKey: "postion")
+                    data["position"] = position
+                    self.database.collection("Players").document(document.documentID).setData(data, completion: { (error) in
+                        if let error = error {
+                            completion(error)
+                        } else {
+                            count += 1
+                            if(count == snapshot!.count) {
+                                completion(nil)
+                            }
+                        }
+                    })
+                }
+            }
         }
     }
     
-    func listDocumentDirectory() {
-        let fileManager = FileManager.default
-        let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        do {
-            let fileURLs = try fileManager.contentsOfDirectory(at: documentsURL, includingPropertiesForKeys: nil)
-            // process files
-            print(fileURLs)
-        } catch {
-            print("Error while enumerating files \(documentsURL.path): \(error.localizedDescription)")
+    func adjustTeamGameStats(completion: @escaping (Error?) -> Void) {
+        var count = 0
+        database.collectionGroup("TeamGameStats").getDocuments { (snapshot, error) in
+            if let error = error {
+                completion(error)
+            } else {
+                for document in snapshot!.documents {
+                    var data = document.data()
+                    data["season"] = "18-19"
+                    data["2FG"] = [
+                        "attempts" : data["2FGA"],
+                        "made" : data["2FGM"],
+                        "percentage" : data["2FG%"]
+                    ]
+                    data.removeValue(forKey: "2FGA")
+                    data.removeValue(forKey: "2FGM")
+                    data.removeValue(forKey: "2FG%")
+                    data["3FG"] = [
+                        "attempts" : data["3FGA"],
+                        "made" : data["3FGM"],
+                        "percentage" : data["3FG%"]
+                    ]
+                    data.removeValue(forKey: "3FGA")
+                    data.removeValue(forKey: "3FGM")
+                    data.removeValue(forKey: "3FG%")
+                    data["FG"] = [
+                        "attempts" : data["FGA"],
+                        "made" : data["FGM"],
+                        "percentage" : data["FG%"]
+                    ]
+                    data.removeValue(forKey: "FGA")
+                    data.removeValue(forKey: "FGM")
+                    data.removeValue(forKey: "FG%")
+                    data["FT"] = [
+                        "attempts" : data["FTA"],
+                        "made" : data["FTM"],
+                        "percentage" : data["FT%"]
+                    ]
+                    data.removeValue(forKey: "FTA")
+                    data.removeValue(forKey: "FTM")
+                    data.removeValue(forKey: "FT%")
+                    
+                    data["REB"] = [
+                        "offensive" : data["ORB"],
+                        "defensive" : data["DRB"],
+                        "total" : data["TREB"]
+                    ]
+                    data.removeValue(forKey: "ORB")
+                    data.removeValue(forKey: "DRB")
+                    data.removeValue(forKey: "TREB")
+                    
+                    document.reference.setData(data, completion: { (error) in
+                        if let error = error {
+                            completion(error)
+                        } else {
+                            print("\(document.documentID) Completed")
+                            count += 1
+                            if (count == snapshot!.count) {
+                                completion(nil)
+                            }
+                        }
+                    })
+                }
+            }
         }
     }
-
+    
+    func deletePlayerStats(completion: @escaping (Error?) -> Void) {
+        var totalcount = 0
+        var count = 0
+        database.collectionGroup("Teams").getDocuments { (teams, error) in
+            if let error = error {
+                completion(error)
+            } else {
+                for team in teams!.documents {
+                    team.reference.collection("Players").getDocuments(completion: { (players, error) in
+                        if let error = error {
+                            completion(error)
+                        } else {
+                            for player in players!.documents {
+                                player.reference.collection("PlayerStats").getDocuments(completion: { (stats, error) in
+                                    if let error = error {
+                                        completion(error)
+                                    } else {
+                                        for stat in stats!.documents {
+                                            totalcount += stats!.count
+                                            stat.reference.delete(completion: { (error) in
+                                                if let error = error {
+                                                    completion(error)
+                                                } else {
+                                                    count += 1
+                                                    if(count == totalcount) {
+                                                        completion(nil)
+                                                    }
+                                                }
+                                            })
+                                        }
+                                    }
+                                })
+                            }
+                        }
+                    })
+                }
+            }
+        }
+    }    
 }

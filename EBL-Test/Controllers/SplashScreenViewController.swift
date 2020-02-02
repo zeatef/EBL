@@ -23,59 +23,34 @@ class SplashScreenViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
+//        let start = DispatchTime.now()
+//        dbManager.getLeagueAverages { (stats, error) in
+//            if let error = error {
+//                print(error)
+//            } else {
+//                let end = DispatchTime.now()
+//                let difference = end.uptimeNanoseconds - start.uptimeNanoseconds
+//                print("Get League Averages Completed in \(Double(difference) / 1_000_000_000) seconds.")
+//                print(stats!)
+//            }
+//        }
         
-//        dbManager.AddTeamImageURLToLocal(team: "League")
-        
-//        populateDatabase(tag: 4)
-                
         setupLoadingInidicator()
         setupSideMenu()
     }
-    
-    func populateDatabase(tag: Int) {
-        switch tag {
-        case 0:
-            databaseSetter.AddAllTeams { (error) in
-                if error == nil {
-                    print("Added All Teams Successfully")
-                }
-            }
-        case 1:
-            databaseSetter.AddAllPlayersTotalStats { (error) in
-                if error == nil {
-                    print("Adding Player Total Stats Completed")
-                }
-            }
-        case 2:
-            databaseSetter.AddAllTeamGameStats(completion: { (error) in
-                if error == nil {
-                    print("Adding Team Game Stats Completed")
-                }
-            })
-        case 3:
-            databaseSetter.AddAllTeamTotalStats(completion: { (error) in
-                if error == nil {
-                    print("Adding Team Total Stats Completed")
-                }
-            })
-        case 4:
-            databaseSetter.convertPlayerDates(completion: { (error) in
-                if error == nil {
-                    print("Converting All Player Birth Dates Completed")
-                }
-            })
-        default:
-            print("None")
-        }
-    }
+
     
     override func viewDidAppear(_ animated: Bool) {
+        let start = DispatchTime.now()
         Auth.auth().addStateDidChangeListener { (auth, user) in
             if user != nil {
-                self.dbManager.setupApplicationDatabase { (error, errorCode) in
+                self.dbManager.setupApplication { (error) in
                     if let error = error {
-                        print("Error Setting Up Application Database, \(errorCode!): \(error)")
+                        print("Error Setting Up Application Database: \(error)")
                     } else {
+                        let end = DispatchTime.now()
+                        let difference = end.uptimeNanoseconds - start.uptimeNanoseconds
+                        print("Setup Application Completed in \(Double(difference) / 1_000_000_000) seconds.")
                         self.performSegue(withIdentifier: "SplashToHome", sender: self)
                     }
                 }

@@ -14,17 +14,23 @@ import ChameleonFramework
 
 class TeamsViewController : UIViewController {
     
+    //MARK:- Instance Variables
     @IBOutlet weak var loadingView: NVActivityIndicatorView!
     @IBOutlet weak var tabbedMenuBar : Segmentio!
     let tabbedMenuBarContent : [SegmentioItem] = [SegmentioItem(title: "Overview", image: nil), SegmentioItem(title: "Game Statistics", image: nil), SegmentioItem(title: "Players", image: nil)]
     
+    @IBOutlet weak var teamOverview: UIView!
+    @IBOutlet weak var teamImage: UIImageView!
+    @IBOutlet weak var currentRanking: UILabel!
+    @IBOutlet weak var seasonRecord: UILabel!
+    @IBOutlet weak var headCoach: UILabel!
+    @IBOutlet weak var hometown: UILabel!
+    @IBOutlet weak var bottomBorder: UIView!
     @IBOutlet weak var pageContent: UIView!
 
     let dbManager = DatabaseManager.sharedInstance
     var currentSubview = 0
-    var team : TeamDisplayData?
-    var players = [Player]()
-    var playersdataArray = [[String]]()
+    var team : Team?
     
     //Initialize First View (Team Overview)
     lazy var teamOverviewVC : TeamOverviewViewController = {
@@ -33,7 +39,6 @@ class TeamsViewController : UIViewController {
         var viewController = storyboard.instantiateViewController(withIdentifier: "TeamOverviewViewController") as! TeamOverviewViewController
         
         viewController.parentVC = self
-        viewController.teamRef = team!.teamRef
         
         self.addViewControllerAsChildViewController(childViewController: viewController)
         
@@ -58,8 +63,6 @@ class TeamsViewController : UIViewController {
         let storyboard = UIStoryboard(name: "Main", bundle: Bundle.main)
         
         var viewController = storyboard.instantiateViewController(withIdentifier: "PlayersOverviewViewController") as! PlayersOverviewViewController
-        
-        viewController.players = self.players
         
         self.addViewControllerAsChildViewController(childViewController: viewController)
         
@@ -88,6 +91,7 @@ class TeamsViewController : UIViewController {
 //        return viewController
 //    }()
     
+    //MARK:- Default Functions
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -97,18 +101,35 @@ class TeamsViewController : UIViewController {
     }
 
     override func willMove(toParent parent: UIViewController?) {
-        revertNavigationBar()
+        navigationController?.navigationBar.tintColor = UIColor.white
     }
     
-    //MARK: - View Methods
+    //MARK: - Setup View Controller Functions
+    func setupTeamInfo(source: FirestoreSource, completion: @escaping (Error?) -> Void) {
+        dbManager.getTeamStats(forTeam: self.team!, source: source) { (error) in
+            if let error = error {
+                completion(error)
+            } else {
+                self.dbManager.getAllPlayers(forTeam: self.team!.abb, source: source) { (players, error) in
+                    if let error = error {
+                        completion(error)
+                    } else {
+                        self.team!.allPlayers = players!
+                        self.team!.setTop3Performers()
+                        completion(nil)
+                    }
+                }
+            }
+        }
+    }
+    
     func setupHeader() {
         let primaryColor = UIColor(hexString: team!.primaryColor)
         
         //Setup Navigation Bar
         title = team!.teamName
         navigationController?.navigationBar.tintColor = primaryColor
-        navigationController?.navigationBar.shadowImage = nil
-
+        navigationController?.navigationBar.shadowImage = UIImage()
         
         // Setup Tabbed Menu Bar
         setupTabbedMenuBar(indicatorColor: UIColor(hexString: team!.primaryColor))
@@ -124,11 +145,7 @@ class TeamsViewController : UIViewController {
         view.bringSubviewToFront(teamOverviewVC.view)
     }
     
-    func revertNavigationBar() {
-        navigationController?.navigationBar.tintColor = UIColor.white
-    }
-    
-    //Mark: - Tabbed Menu Bar Functions
+    //MARK: - Tabbed Menu Bar Functions
     func setupTabbedMenuBar(indicatorColor: UIColor = UIColor.flatOrange()){
         tabbedMenuBar.setup(content: tabbedMenuBarContent, style: .onlyLabel, options: SegmentioOptions(
             backgroundColor: tabbedMenuBar.backgroundColor!,
@@ -226,23 +243,5 @@ class TeamsViewController : UIViewController {
         childViewController.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         
         childViewController.didMove(toParent: self)
-    }
-    
-    //MARK: - Database Methods
-    func getPlayersData(completion: @escaping (Error?) -> Void) {
-        dbManager.getPlayers(forTeam: teamOverviewVC.team!.teamRef) { (error, players) in
-            if let error = error {
-                print("Error Fetching Players, \(error)")
-                completion(error)
-            } else {
-                self.players = players!
-                self.playersOverviewVC.players = players!
-                self.playersOverviewVC.check = true
-                if(self.currentSubview != 2) {
-                    self.playersOverviewVC.view.isHidden = true
-                }
-                completion(nil)
-            }
-        }
     }
 }

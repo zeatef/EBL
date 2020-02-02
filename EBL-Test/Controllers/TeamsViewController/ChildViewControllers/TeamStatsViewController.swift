@@ -23,80 +23,64 @@ class TeamStatsViewController: UIViewController {
     let dbManager = DatabaseManager.sharedInstance
     var parentVC : TeamsViewController?
     
-    let statTitles = ["PTS", "3FGA", "3FGM", "3FG%", "2FGA", "2FGM", "2FG%", "FGA", "FGM", "FG%", "FTA", "FTM", "FT%", "AST", "ORB", "DRB", "TREB", "STL", "TO", "BLK", "FOL"]
-    var teamGameStats : [TeamGameStats] = [TeamGameStats]()
-    var fetchCompleted : Bool = false
-    var gamesPlayed = 0
+    let statTitles = ["PTS", "FG", "FG%", "3FG", "3FG%", "2FG", "2FG%", "FT", "FT%", "AST", "ORB", "DRB", "TREB", "STL", "TO", "BLK", "FOL"]
+
     var dataArray : [[String]] = []
     
     
     override func viewDidLoad() {
         super.viewDidLoad()
         registerXibFiles()
-        fetchData()
-        setupDataArray()
-        
+        fetchData()        
     }
         
     func registerXibFiles(){
-        teamGameStatsCollectionView.register(UINib(nibName: "StatsCollectionViewCell1", bundle: Bundle.main), forCellWithReuseIdentifier: "StatsCell1")
+        teamGameStatsCollectionView.register(UINib(nibName: "GameStatCollectionViewCell", bundle: Bundle.main), forCellWithReuseIdentifier: "GameStatCell")
         teamGameStatsCollectionView.register(UINib(nibName: "StatsCollectionViewCell2", bundle: Bundle.main), forCellWithReuseIdentifier: "StatsCell2")
         teamGameStatsCollectionView.register(UINib(nibName: "StatsCollectionViewCell3", bundle: Bundle.main), forCellWithReuseIdentifier: "StatsCell3")
     }
     
     func fetchData() {
-        dbManager.getTeamGameStats(forTeamRef: parentVC!.team!.teamRef) { (error, hasData, result) in
+        dbManager.getTeamGameStats(forTeam: parentVC!.team!) { (error) in
             if let error = error {
                 print(error)
+                self.dataArray = []
             } else {
-                if(hasData!) {
-                    self.teamGameStats = result!
-                    self.gamesPlayed = result!.count
-                    self.fetchCompleted = true
-                    self.setupDataArray()
-                }
+                self.setupDataArray()
             }
         }
     }
     
     func setupDataArray() {
-        if(fetchCompleted) {
-            if(gamesPlayed == 0) {
-                teamGameStatsCollectionView.isHidden = true
-            } else {
-                view.hideSkeleton()
+        if(parentVC!.team!.gameStatistics!.count == 0) {
+            teamGameStatsCollectionView.isHidden = true
+        } else {
+            view.hideSkeleton()
+            
+            for gameStats in parentVC!.team!.gameStatistics! {
+                var tempArray : [String] = []
+                tempArray.append("\(gameStats.PTS)")
+                tempArray.append("\(gameStats.FG.made)/\(gameStats.FG.attempts)")
+                tempArray.append("\(String(format: "%.1f", gameStats.FG.percentage*100.0))%")
+                tempArray.append("\(gameStats.FG3.made)/\(gameStats.FG3.attempts)")
+                tempArray.append("\(String(format: "%.1f", gameStats.FG3.percentage*100.0))%")
+                tempArray.append("\(gameStats.FG2.made)/\(gameStats.FG2.attempts)")
+                tempArray.append("\(String(format: "%.1f", gameStats.FG2.percentage*100.0))%")
+                tempArray.append("\(gameStats.FT.made)/\(gameStats.FT.attempts)")
+                tempArray.append("\(String(format: "%.1f", gameStats.FT.percentage*100.0))%")
+                tempArray.append("\(gameStats.AST)")
+                tempArray.append("\(gameStats.OREB)")
+                tempArray.append("\(gameStats.DREB)")
+                tempArray.append("\(gameStats.TREB)")
+                tempArray.append("\(gameStats.STL)")
+                tempArray.append("\(gameStats.TO)")
+                tempArray.append("\(gameStats.BLK)")
+                tempArray.append("\(gameStats.FOL)")
                 
-                for gameStats in teamGameStats {
-                    var tempArray : [String] = []
-                    tempArray.append(gameStats.opponentAbb)
-                    tempArray.append(gameStats.home ? "(Home)" : "(Away)")
-                    tempArray.append("\(gameStats.PTS)")
-                    tempArray.append("\(gameStats.total3FGA)")
-                    tempArray.append("\(gameStats.total3FGM)")
-                    tempArray.append("\(gameStats.avg3FGP)")
-                    tempArray.append("\(gameStats.total2FGA)")
-                    tempArray.append("\(gameStats.total2FGM)")
-                    tempArray.append("\(gameStats.avg2FGP)")
-                    tempArray.append("\(gameStats.totalFGA)")
-                    tempArray.append("\(gameStats.totalFGM)")
-                    tempArray.append("\(gameStats.avgFGP)")
-                    tempArray.append("\(gameStats.totalFTA)")
-                    tempArray.append("\(gameStats.totalFTM)")
-                    tempArray.append("\(gameStats.avgFTP)")
-                    tempArray.append("\(gameStats.AST)")
-                    tempArray.append("\(gameStats.ORB)")
-                    tempArray.append("\(gameStats.DRB)")
-                    tempArray.append("\(gameStats.REB)")
-                    tempArray.append("\(gameStats.STL)")
-                    tempArray.append("\(gameStats.TO)")
-                    tempArray.append("\(gameStats.BLK)")
-                    tempArray.append("\(gameStats.FOL)")
-                    
-                    self.dataArray.append(tempArray)
-                }
-                
-                self.teamGameStatsCollectionView.reloadData()
+                self.dataArray.append(tempArray)
             }
+            
+            self.teamGameStatsCollectionView.reloadData()
         }
     }
 }
@@ -105,7 +89,7 @@ class TeamStatsViewController: UIViewController {
 extension TeamStatsViewController: UICollectionViewDataSource {
     
     func numberOfSections(in collectionView: UICollectionView) -> Int {
-        if(!fetchCompleted) {
+        if(dataArray.count == 0) {
             return 12
         } else {
             return dataArray.count + 1
@@ -113,7 +97,7 @@ extension TeamStatsViewController: UICollectionViewDataSource {
     }
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        if(!fetchCompleted) {
+        if(dataArray.count == 0) {
             if(section == 0) {
                 return statTitles.count + 1
             } else {
@@ -140,21 +124,32 @@ extension TeamStatsViewController: UICollectionViewDataSource {
                 return cell
             } else {
                 //Player Name
-                guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "StatsCell1", for: indexPath) as? PlayerNameAndImageCell else {
+                guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "GameStatCell", for: indexPath) as? GameStatCollectionViewCell else {
                     return UICollectionViewCell()
                 }
                 
                 cell.isSkeletonable = true
                 
                 if (dataArray.count > 0) {
-                    cell.playerImage.kf.setImage(with: dbManager.getTeamImageURL(teamID: teamGameStats[indexPath.section-1].opponentAbb))
-                    cell.firstName.text = dataArray[indexPath.section - 1][indexPath.row]
-                    cell.lastName.text = dataArray[indexPath.section - 1][indexPath.row + 1]
+                    cell.opponentImage.kf.setImage(with: dbManager.getTeamImageURL(teamID: parentVC!.team!.gameStatistics![indexPath.section-1].opponentAbb))
+                    cell.opponentName.text = parentVC!.team!.gameStatistics![indexPath.section-1].opponentAbb
+                    
+                    if(parentVC!.team!.gameStatistics![indexPath.section-1].isHome) {
+                        cell.isHome.text = "(H)"
+                        cell.homeScore.text = "\(parentVC!.team!.gameStatistics![indexPath.section-1].PTS)"
+                        cell.awayScore.text = "\(parentVC!.team!.gameStatistics![indexPath.section-1].opponentPTS)"
+                        
+                        cell.homeScore.textColor = parentVC!.team!.gameStatistics![indexPath.section-1].opponentPTS > parentVC!.team!.gameStatistics![indexPath.section-1].PTS ? UIColor.flatRed() : UIColor.flatGreen()
+                    } else {
+                        cell.isHome.text = "(A)"
+                        cell.homeScore.text = "\(parentVC!.team!.gameStatistics![indexPath.section-1].opponentPTS)"
+                        cell.awayScore.text = "\(parentVC!.team!.gameStatistics![indexPath.section-1].PTS)"
+
+                        cell.awayScore.textColor = parentVC!.team!.gameStatistics![indexPath.section-1].opponentPTS > parentVC!.team!.gameStatistics![indexPath.section-1].PTS ? UIColor.flatRed() : UIColor.flatGreen()
+                    }
                 } else {
                     cell.showAnimatedGradientSkeleton(usingGradient: .init(baseColor: view.backgroundColor!))
                 }
-                cell.firstName.font = .systemFont(ofSize: 11)
-                cell.lastName.font = .systemFont(ofSize: 9)
                 
                 cell.backgroundColor = UIColor(hexString: "484848")
                 
@@ -168,7 +163,6 @@ extension TeamStatsViewController: UICollectionViewDataSource {
                 }
                 
                 cell.titleLabel.text = statTitles[indexPath.row - 1]
-                
                 cell.titleLabel.textColor = UIColor(hexString: "ffffff")
                 cell.backgroundColor = UIColor(hexString: "2b2b2b")
                 
@@ -183,7 +177,7 @@ extension TeamStatsViewController: UICollectionViewDataSource {
                 cell.isSkeletonable = true
                 
                 if(dataArray.count > 0) {
-                    cell.titleLabel.text = dataArray[indexPath.section - 1][indexPath.row + 1]
+                    cell.titleLabel.text = dataArray[indexPath.section - 1][indexPath.row - 1]
                 } else {
                     cell.titleLabel.text = ""
                 }
@@ -198,13 +192,13 @@ extension TeamStatsViewController: UICollectionViewDataSource {
 extension TeamStatsViewController: UICollectionViewDelegateFlowLayout {
     
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        if(!fetchCompleted) {
+        if(dataArray.count == 0) {
             switch indexPath.section {
             case 0:
                 if(indexPath.row == 0) {
-                    return CGSize(width: 120, height: 40)
+                    return CGSize(width: 110, height: 30)
                 } else {
-                    return CGSize(width: 45, height: 40)
+                    return CGSize(width: 45, height: 30)
                 }
             default:
                 let width =  UIScreen.main.bounds.width
@@ -214,13 +208,13 @@ extension TeamStatsViewController: UICollectionViewDelegateFlowLayout {
             switch indexPath.row {
             case 0:
                 if(indexPath.section == 0) {
-                    return CGSize(width: 110, height: 40)
+                    return CGSize(width: 110, height: 30)
                 } else {
                     return CGSize(width: 110, height: 50)
                 }
             default:
                 if(indexPath.section == 0) {
-                    return CGSize(width: 45, height: 40)
+                    return CGSize(width: 45, height: 30)
                 } else {
                     return CGSize(width: 45, height: 50)
                     
@@ -238,7 +232,7 @@ extension TeamStatsViewController : SkeletonCollectionViewDataSource {
             if(indexPath.section == 0) {
                 return "StatsCell2"
             } else {
-                return "StatsCell1"
+                return "GameStatCell"
             }
         default:
             if(indexPath.section == 0) {
